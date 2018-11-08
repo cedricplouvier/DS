@@ -9,7 +9,22 @@ import java.net.InetAddress;
 public class NamingNode
 {
 
-    public NamingNode() {}
+    public NamingInterface stub;
+
+    public NamingNode(String hostname, String IP)
+    {
+        try{
+            //RMI
+            Registry registry = LocateRegistry.getRegistry("localhost", 1099); //server IP and port
+            stub = (NamingInterface) registry.lookup("NamingInterface");
+
+            stub.addNode(hostname,IP); //RMI get added to the MAP
+        }catch(Exception e)
+        {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
+        }
+    }
 
     public String getInterfaceIP(String interfaceName) {
         String ip = null;
@@ -66,7 +81,7 @@ public class NamingNode
         }
     }
 
-    public static void main(String[] args)
+    /*public static void main(String[] args)
     {
         NamingNode obj = new NamingNode();
         //IP
@@ -82,7 +97,7 @@ public class NamingNode
             hostname = ipA.getHostName();
 
             //RMI
-            Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
+            Registry registry = LocateRegistry.getRegistry("localhost", 1099); //server IP and port
             NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
 
             stub.addNode(hostname,ip); //RMI get added to the MAP
@@ -92,5 +107,5 @@ public class NamingNode
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();
         }
-    }
+    }*/
 }

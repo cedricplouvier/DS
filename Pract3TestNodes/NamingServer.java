@@ -13,7 +13,7 @@ import javax.xml.stream.*;
 public class NamingServer implements NamingInterface
 {
     public TreeMap<Integer, String> IPmap = new TreeMap<>();
-    public TreeMap<Integer,Integer> fileOwnerMap = new TreeMap<>();
+    public TreeMap<Integer,List<String>> fileOwnerMap = new TreeMap<>();
     String [] fileArray = {"Taak1.docx","Song.mp3","Uitgaven.xls","loon.pdf","readme.txt","download.rar"};
 
     public NamingServer() {}
@@ -25,7 +25,7 @@ public class NamingServer implements NamingInterface
         {
             IPmap.put(nodeID,IP);
             recalculate();
-            writeToXML();
+            printAll();
         }
         else System.out.println("Node already in use.");
     }
@@ -38,7 +38,7 @@ public class NamingServer implements NamingInterface
             IPmap.remove(nodeID);
             fileOwnerMap.remove(nodeID);
             recalculate();
-            writeToXML();
+            printAll();
         }
         else System.out.println("Node not in system.");
     }
@@ -67,15 +67,33 @@ public class NamingServer implements NamingInterface
 
     public void recalculate() //assigns files to the different nodes
     {
+        for (Map.Entry<Integer, String> entry : IPmap.entrySet()) //creates empty array for each node
+        {
+            fileOwnerMap.put(entry.getKey(), new ArrayList<>());
+        }
         for(int i = 0; i < fileArray.length; i++)
         {
-            fileOwnerMap.put((Math.abs(fileArray[i].hashCode()) % 32768) ,filePlacer(fileArray[i]));
+            fileOwnerMap.get(filePlacer(fileArray[i])).add(fileArray[i]);
         }
+    }
+
+    public void printAll() throws IOException, XMLStreamException
+    {
+        for (Map.Entry<Integer, String> entry : IPmap.entrySet()) {
+            System.out.println("Key: " + entry.getKey() + ". Value: " + entry.getValue());
+        }
+        System.out.println("\n");
+        for(Map.Entry<Integer,List<String>> entry : fileOwnerMap.entrySet())
+        {
+            System.out.println(entry.getKey() + " = " + entry.getValue());
+        }
+        System.out.println("\n");
+        writeToXML();
     }
 
     public void writeToXML() throws IOException,XMLStreamException
     {
-        FileWriter out = new FileWriter("/home/pi/Documents/distributed/map.xml");
+        FileWriter out = new FileWriter("C:\\Users\\Maximiliaan\\map.xml");
         XMLStreamWriter xsw = null;
         try {
             try {
