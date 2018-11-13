@@ -52,7 +52,6 @@ public class NamingNode
         String hostname;
         String interfaceName = "eth0";
         String ip;
-        InetAddress ipA;
 
         try
         {
@@ -66,8 +65,7 @@ public class NamingNode
                     InetAddress i = (InetAddress) ee.nextElement();
                     if(i.getHostAddress().contains("192.168.0."))
                     {
-                        ip =
-                        ipA = InetAddress.getByName(i.getHostAddress());
+                        ip = i.getHostAddress();
                     }
                 }
             }
