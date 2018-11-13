@@ -50,7 +50,6 @@ public class NamingNode
         NamingNode obj = new NamingNode();
         //IP
         String hostname;
-        String interfaceName = "eth0";
         String ip = null;
         InetAddress i = null;
 
