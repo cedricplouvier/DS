@@ -47,22 +47,21 @@ public class NamingNode
 
     public static void main(String[] args)
     {
-        NamingNode obj = new NamingNode();
         //IP
         String hostname;
-        String interfaceName = "eth0";
-        String ip;
+        String ip  = null;
 
         try
         {
             Enumeration e = NetworkInterface.getNetworkInterfaces();
+            InetAddress i = null;
             while(e.hasMoreElements())
             {
-                NetworkInterface n = (NetworkInterface) e.nextElement();
+                NetworkInterface n = (NetworkInterface) e.nextElement(); //iterate through all elements
                 Enumeration ee = n.getInetAddresses();
                 while (ee.hasMoreElements())
                 {
-                    InetAddress i = (InetAddress) ee.nextElement();
+                    i = (InetAddress) ee.nextElement();
                     if(i.getHostAddress().contains("192.168.0."))
                     {
                         ip = i.getHostAddress();
@@ -75,7 +74,11 @@ public class NamingNode
             Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
             NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
 
-            stub.addNode(hostname,ip); //RMI get added to the MAP
+            if( ip != null)
+            {
+                stub.addNode(hostname,ip); //RMI get added to the MAP
+            }
+
 
         }catch(Exception e)
         {
