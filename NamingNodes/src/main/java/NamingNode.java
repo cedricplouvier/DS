@@ -11,27 +11,6 @@ public class NamingNode
 
     public NamingNode() {}
 
-    public String getInterfaceIP(String interfaceName) {
-        String ip = null;
-        try
-        {
-            NetworkInterface networkInterface = NetworkInterface.getByName(interfaceName);
-            Enumeration<InetAddress> inetAddress = networkInterface.getInetAddresses();
-            InetAddress currentAddress;
-            currentAddress = inetAddress.nextElement();
-            while (inetAddress.hasMoreElements()) {
-                System.out.println(currentAddress);
-                if (currentAddress instanceof Inet4Address && !currentAddress.isLoopbackAddress())
-                {
-                    ip = currentAddress.toString();
-                    break;
-                }
-                currentAddress = inetAddress.nextElement();
-            }
-        }catch(Exception e) {}
-        return ip;
-    }
-
     public void downloadFile(String filename) throws IOException
     {
         Socket csock = null;
@@ -68,22 +47,23 @@ public class NamingNode
 
     public static void main(String[] args)
     {
+        NamingNode obj = new NamingNode();
         //IP
         String hostname;
-<<<<<<< HEAD
-        String ip  = null;
+        String interfaceName = "eth0";
+        String ip = null;
+        InetAddress i = null;
 
         try
         {
             Enumeration e = NetworkInterface.getNetworkInterfaces();
-            InetAddress i = null;
             while(e.hasMoreElements())
             {
-                NetworkInterface n = (NetworkInterface) e.nextElement(); //iterate through all elements
+                NetworkInterface n = (NetworkInterface) e.nextElement();
                 Enumeration ee = n.getInetAddresses();
                 while (ee.hasMoreElements())
                 {
-                    i = (InetAddress) ee.nextElement();
+                    i =  (InetAddress) ee.nextElement();
                     if(i.getHostAddress().contains("192.168.0."))
                     {
                         ip = i.getHostAddress();
@@ -91,28 +71,14 @@ public class NamingNode
                 }
             }
             hostname = "Node" + i.getHostAddress().substring(i.getHostAddress().lastIndexOf(".") + 1);
-=======
-        String interfaceName = "eth0";
-        String ip;
-        InetAddress ipA;
-
-        try
-        {
-            ip = obj.getInterfaceIP(interfaceName); //get IP of the right interface
-            ipA = InetAddress.getByName(ip);
-            hostname = ipA.getHostName();
->>>>>>> 6719ac6bee5b19d55d3d82a4e353d63498e82df1
 
             //RMI
             Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
             NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
 
-            if( ip != null)
-            {
-                stub.addNode(hostname,ip); //RMI get added to the MAP
+            if (ip != null) {
+                stub.addNode(hostname, ip); //RMI get added to the MAP
             }
-
-
         }catch(Exception e)
         {
             System.err.println("Client exception: " + e.toString());
