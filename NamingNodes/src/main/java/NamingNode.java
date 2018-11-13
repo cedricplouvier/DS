@@ -11,6 +11,27 @@ public class NamingNode
 
     public NamingNode() {}
 
+    public String getInterfaceIP(String interfaceName) {
+        String ip = null;
+        try
+        {
+            NetworkInterface networkInterface = NetworkInterface.getByName(interfaceName);
+            Enumeration<InetAddress> inetAddress = networkInterface.getInetAddresses();
+            InetAddress currentAddress;
+            currentAddress = inetAddress.nextElement();
+            while (inetAddress.hasMoreElements()) {
+                System.out.println(currentAddress);
+                if (currentAddress instanceof Inet4Address && !currentAddress.isLoopbackAddress())
+                {
+                    ip = currentAddress.toString();
+                    break;
+                }
+                currentAddress = inetAddress.nextElement();
+            }
+        }catch(Exception e) {}
+        return ip;
+    }
+
     public void downloadFile(String filename) throws IOException
     {
         Socket csock = null;
@@ -52,24 +73,13 @@ public class NamingNode
         String hostname;
         String interfaceName = "eth0";
         String ip;
+        InetAddress ipA;
 
         try
         {
-            Enumeration e = NetworkInterface.getNetworkInterfaces();
-            while(e.hasMoreElements())
-            {
-                NetworkInterface n = (NetworkInterface) e.nextElement();
-                Enumeration ee = n.getInetAddresses();
-                while (ee.hasMoreElements())
-                {
-                    InetAddress i = (InetAddress) ee.nextElement();
-                    if(i.getHostAddress().contains("192.168.0."))
-                    {
-                        ip = i.getHostAddress();
-                    }
-                }
-            }
-            hostname = "Node" + i.getHostAddress().substring(i.getHostAddress().lastIndexOf(".") + 1);
+            ip = obj.getInterfaceIP(interfaceName); //get IP of the right interface
+            ipA = InetAddress.getByName(ip);
+            hostname = ipA.getHostName();
 
             //RMI
             Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
