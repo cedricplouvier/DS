@@ -47,7 +47,6 @@ public class NamingNode
 
     public static void main(String[] args)
     {
-        NamingNode obj = new NamingNode();
         //IP
         String hostname;
         String ip = null;
@@ -56,20 +55,20 @@ public class NamingNode
         try
         {
             Enumeration e = NetworkInterface.getNetworkInterfaces();
-            while(e.hasMoreElements())
+            while(e.hasMoreElements()) //iterate through all network interfaces
             {
                 NetworkInterface n = (NetworkInterface) e.nextElement();
                 Enumeration ee = n.getInetAddresses();
                 while (ee.hasMoreElements())
                 {
                     i =  (InetAddress) ee.nextElement();
-                    if(i.getHostAddress().contains("192.168.0."))
+                    if(i.getHostAddress().contains("192.168.0.")) //if address contains our local adress, use it
                     {
                         ip = i.getHostAddress();
                     }
                 }
             }
-            hostname = "Node" + i.getHostAddress().substring(i.getHostAddress().lastIndexOf(".") + 1);
+            hostname = "Node" + i.getHostAddress().substring(i.getHostAddress().lastIndexOf(".") + 1); //if IP ends in '1', hostname will be Node1
 
             //RMI
             Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
