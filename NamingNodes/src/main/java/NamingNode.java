@@ -11,6 +11,27 @@ public class NamingNode
 
     public NamingNode() {}
 
+    public String getInterfaceIP(String interfaceName) {
+        String ip = null;
+        try
+        {
+            NetworkInterface networkInterface = NetworkInterface.getByName(interfaceName);
+            Enumeration<InetAddress> inetAddress = networkInterface.getInetAddresses();
+            InetAddress currentAddress;
+            currentAddress = inetAddress.nextElement();
+            while (inetAddress.hasMoreElements()) {
+                System.out.println(currentAddress);
+                if (currentAddress instanceof Inet4Address && !currentAddress.isLoopbackAddress())
+                {
+                    ip = currentAddress.toString();
+                    break;
+                }
+                currentAddress = inetAddress.nextElement();
+            }
+        }catch(Exception e) {}
+        return ip;
+    }
+
     public void downloadFile(String filename) throws IOException
     {
         Socket csock = null;
@@ -49,6 +70,7 @@ public class NamingNode
     {
         //IP
         String hostname;
+<<<<<<< HEAD
         String ip  = null;
 
         try
@@ -69,6 +91,17 @@ public class NamingNode
                 }
             }
             hostname = "Node" + i.getHostAddress().substring(i.getHostAddress().lastIndexOf(".") + 1);
+=======
+        String interfaceName = "eth0";
+        String ip;
+        InetAddress ipA;
+
+        try
+        {
+            ip = obj.getInterfaceIP(interfaceName); //get IP of the right interface
+            ipA = InetAddress.getByName(ip);
+            hostname = ipA.getHostName();
+>>>>>>> 6719ac6bee5b19d55d3d82a4e353d63498e82df1
 
             //RMI
             Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
