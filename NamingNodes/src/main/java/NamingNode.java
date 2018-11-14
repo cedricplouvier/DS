@@ -49,33 +49,34 @@ public class NamingNode
     {
         //IP
         String hostname;
-        String ip = null;
-        InetAddress i = null;
-
-        try
-        {
+        String ipString;
+        InetAddress ip = null;
+        try {
             Enumeration e = NetworkInterface.getNetworkInterfaces();
-            while(e.hasMoreElements()) //iterate through all network interfaces
-            {
+            while (e.hasMoreElements()) {
                 NetworkInterface n = (NetworkInterface) e.nextElement();
                 Enumeration ee = n.getInetAddresses();
-                while (ee.hasMoreElements())
-                {
-                    i =  (InetAddress) ee.nextElement();
-                    if(i.getHostAddress().contains("192.168.0.")) //if address contains our local adress, use it
-                    {
-                        ip = i.getHostAddress();
+                while (ee.hasMoreElements()) {  //while lus doorheen alle
+                    InetAddress i = (InetAddress) ee.nextElement();
+                    if (i.getHostAddress().contains("192.168.0.")){
+                        ip = i;
+
                     }
                 }
             }
-            hostname = "Node" + i.getHostAddress().substring(i.getHostAddress().lastIndexOf(".") + 1); //if IP ends in '1', hostname will be Node1
+            ipString = ip.getHostAddress(); //ip in Stringformaat
+            hostname = "Node " + ipString.substring(10); //hostname declareren met laatste getal van ip
+            //print commando's
+            System.out.println("ip address is " + ipString);
+            System.out.println("hostname is " + hostname);
+            System.out.println(ip);
 
             //RMI
             Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
             NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
 
             if (ip != null) {
-                stub.addNode(hostname, ip); //RMI get added to the MAP
+                stub.addNode(hostname, ipString); //RMI get added to the MAP
             }
         }catch(Exception e)
         {
