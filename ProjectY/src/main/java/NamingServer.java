@@ -120,8 +120,10 @@ public class NamingServer implements NamingInterface {
             NamingServer obj = new NamingServer();
             NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(obj, 0);
 
+
             // Bind the remote object's stub in the registry
             //Registry registry = LocateRegistry.getRegistry();
+            System.setProperty("java.rmi.server.hostname","192.168.0.4");
             Registry registry = LocateRegistry.createRegistry(1099);
             registry.bind("NamingInterface", stub);
 

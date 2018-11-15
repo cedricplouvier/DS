@@ -75,6 +75,7 @@ public class NamingNode
             Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
             NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
 
+            String NamingServerURL = "rmi:"
             if (ip != null) {
                 stub.addNode(hostname, ipString); //RMI get added to the MAP
             }
