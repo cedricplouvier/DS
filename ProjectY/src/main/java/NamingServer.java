@@ -1,6 +1,7 @@
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.ServerSocket;
+import java.net.*;
+import java.nio.channels.MembershipKey;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.Map;
@@ -9,6 +10,9 @@ import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.xml.stream.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 
 public class NamingServer implements NamingInterface {
     public TreeMap<Integer, String> IPmap = new TreeMap<>();
@@ -98,24 +102,56 @@ public class NamingServer implements NamingInterface {
         }
     }
 
+    public void multicastSend(String message) throws IOException
+    {
+        final String MULTICAST_INTERFACE = "eth0";
+        final int MULTICAST_PORT = 4321;
+        final String MULTICAST_IP = "192.168.0.0";
+
+        DatagramChannel datagramChannel=DatagramChannel.open();
+        datagramChannel.bind(null);
+        NetworkInterface networkInterface=NetworkInterface
+                .getByName(MULTICAST_INTERFACE);
+        datagramChannel.setOption(StandardSocketOptions
+                .IP_MULTICAST_IF,networkInterface);
+        ByteBuffer byteBuffer=ByteBuffer.wrap
+                (message.getBytes());
+        InetSocketAddress inetSocketAddress=new
+                InetSocketAddress(MULTICAST_IP,MULTICAST_PORT);
+        datagramChannel.send(byteBuffer,inetSocketAddress);
+    }
+
+    public String multicastReceive() throws IOException
+    {
+        final String MULTICAST_INTERFACE = "eth0";
+        final int MULTICAST_PORT = 4321;
+        final String MULTICAST_IP = "192.168.0.0";
+
+        DatagramChannel datagramChannel = DatagramChannel
+                .open(StandardProtocolFamily.INET);
+        NetworkInterface networkInterface = NetworkInterface
+                .getByName(MULTICAST_INTERFACE);
+        datagramChannel.setOption(StandardSocketOptions
+                .SO_REUSEADDR, true);
+        datagramChannel.bind(new InetSocketAddress(MULTICAST_PORT));
+        datagramChannel.setOption(StandardSocketOptions
+                .IP_MULTICAST_IF, networkInterface);
+        InetAddress inetAddress = InetAddress.getByName(MULTICAST_IP);
+        MembershipKey membershipKey = datagramChannel.join
+                (inetAddress, networkInterface);
+        System.out.println("Waiting for the message...");
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+        datagramChannel.receive(byteBuffer);
+        byteBuffer.flip();
+        byte[] bytes = new byte[byteBuffer.limit()];
+        byteBuffer.get(bytes, 0, byteBuffer.limit());
+        membershipKey.drop();
+        return new String(bytes);
+    }
+
     public static void main(String args[]) throws IOException {
         ServerSocket servsock = null;
         try {
-            /*TCP
-            servsock = new ServerSocket(6789);
-            ClientWorker w;
-            try
-            {
-                w = new ClientWorker(servsock.accept());
-                Thread t = new Thread(w);
-                t.start();
-                System.out.println("Accepted connection : " + servsock);
-            } catch(IOException e)
-            {
-                System.out.println("Accept failed");
-                System.exit(-1);
-            }*/
-
             //RMI
             NamingServer obj = new NamingServer();
             NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(obj, 0);
@@ -126,6 +162,19 @@ public class NamingServer implements NamingInterface {
             registry.bind("NamingInterface", stub);
 
             System.err.println("Server ready");
+
+            //multicast
+            NamingServer ns = new NamingServer();
+            String[] nodeMessage;
+            while(true)
+            {
+                System.out.println(ns.multicastReceive());
+                nodeMessage = ns.multicastReceive().split(" ");
+                ns.addNode(nodeMessage[0],nodeMessage[1]);
+                //send message with ns.IPmap.size(); to nodeMessage[0]
+
+            }
+
         } catch (Exception e) {
             System.err.println("Server exception: " + e.toString());
             e.printStackTrace();

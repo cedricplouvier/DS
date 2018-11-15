@@ -4,6 +4,10 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.net.InetAddress;
+import java.net.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.MembershipKey;
 
 
 public class NamingNode
@@ -45,12 +49,69 @@ public class NamingNode
         }
     }
 
+    public Integer calculateHash(String hostname)
+    {
+        return Math.abs(hostname.hashCode()) % 32768;
+    }
+
+    public String multicastReceive() throws IOException
+    {
+        final String MULTICAST_INTERFACE = "eth0";
+        final int MULTICAST_PORT = 4321;
+        final String MULTICAST_IP = "192.168.0.0";
+
+        DatagramChannel datagramChannel = DatagramChannel
+                .open(StandardProtocolFamily.INET);
+        NetworkInterface networkInterface = NetworkInterface
+                .getByName(MULTICAST_INTERFACE);
+        datagramChannel.setOption(StandardSocketOptions
+                .SO_REUSEADDR, true);
+        datagramChannel.bind(new InetSocketAddress(MULTICAST_PORT));
+        datagramChannel.setOption(StandardSocketOptions
+                .IP_MULTICAST_IF, networkInterface);
+        InetAddress inetAddress = InetAddress.getByName(MULTICAST_IP);
+        MembershipKey membershipKey = datagramChannel.join
+                (inetAddress, networkInterface);
+        System.out.println("Waiting for the message...");
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+        datagramChannel.receive(byteBuffer);
+        byteBuffer.flip();
+        byte[] bytes = new byte[byteBuffer.limit()];
+        byteBuffer.get(bytes, 0, byteBuffer.limit());
+        membershipKey.drop();
+        return new String(bytes);
+    }
+
+    public void multicastSend(String message) throws IOException
+    {
+        final String MULTICAST_INTERFACE = "eth0";
+        final int MULTICAST_PORT = 4321;
+        final String MULTICAST_IP = "192.168.0.0";
+
+        DatagramChannel datagramChannel=DatagramChannel.open();
+        datagramChannel.bind(null);
+        NetworkInterface networkInterface=NetworkInterface
+                .getByName(MULTICAST_INTERFACE);
+        datagramChannel.setOption(StandardSocketOptions
+                .IP_MULTICAST_IF,networkInterface);
+        ByteBuffer byteBuffer=ByteBuffer.wrap
+                (message.getBytes());
+        InetSocketAddress inetSocketAddress=new
+                InetSocketAddress(MULTICAST_IP,MULTICAST_PORT);
+        datagramChannel.send(byteBuffer,inetSocketAddress);
+    }
+
     public static void main(String[] args)
     {
+        NamingNode nn = new NamingNode();
         //IP
         String hostname;
         String ipString;
         InetAddress ip = null;
+        //Multicast
+        String[] nodeMessage;
+        Integer newHash = 0;
+
         try {
             Enumeration e = NetworkInterface.getNetworkInterfaces();
             while (e.hasMoreElements()) {
@@ -77,6 +138,18 @@ public class NamingNode
 
             if (ip != null) {
                 stub.addNode(hostname, ipString); //RMI get added to the MAP
+            }
+
+            //Multicast
+            nn.multicastSend(ipString+" "+hostname);
+
+            while(true)
+            {
+                System.out.println(nn.multicastReceive());
+                nodeMessage = nn.multicastReceive().split(" ");
+
+                System.out.println(nn.calculateHash(nodeMessage[1]));
+                if()
             }
         }catch(Exception e)
         {
