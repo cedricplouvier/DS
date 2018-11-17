@@ -19,7 +19,15 @@ public class NamingServer implements NamingInterface {
     public TreeMap<Integer, Integer> fileOwnerMap = new TreeMap<>();
     String[] fileArray = {"Taak1.docx", "Song.mp3", "Uitgaven.xls", "loon.pdf", "readme.txt", "download.rar"};
 
+    private static final String MULTICAST_INTERFACE = "eth0";
+    private static final int MULTICAST_PORT = 4321;
+    private static final String MULTICAST_IP = "225.4.5.6";
+
     public NamingServer() {
+    }
+
+    public Integer calculateHash(String hostname) {
+        return Math.abs(hostname.hashCode()) % 32768;
     }
 
     public void addNode(String hostname, String IP) throws IOException, XMLStreamException {
@@ -102,84 +110,29 @@ public class NamingServer implements NamingInterface {
         }
     }
 
-    public void multicastSend(String message) throws IOException
-    {
-        final String MULTICAST_INTERFACE = "eth0";
-        final int MULTICAST_PORT = 4321;
-        final String MULTICAST_IP = "192.168.0.0";
-
-        DatagramChannel datagramChannel=DatagramChannel.open();
-        datagramChannel.bind(null);
-        NetworkInterface networkInterface=NetworkInterface
-                .getByName(MULTICAST_INTERFACE);
-        datagramChannel.setOption(StandardSocketOptions
-                .IP_MULTICAST_IF,networkInterface);
-        ByteBuffer byteBuffer=ByteBuffer.wrap
-                (message.getBytes());
-        InetSocketAddress inetSocketAddress=new
-                InetSocketAddress(MULTICAST_IP,MULTICAST_PORT);
-        datagramChannel.send(byteBuffer,inetSocketAddress);
-    }
-
-    public String multicastReceive() throws IOException
-    {
-        final String MULTICAST_INTERFACE = "eth0";
-        final int MULTICAST_PORT = 4321;
-        final String MULTICAST_IP = "192.168.0.0";
-
-        DatagramChannel datagramChannel = DatagramChannel
-                .open(StandardProtocolFamily.INET);
-        NetworkInterface networkInterface = NetworkInterface
-                .getByName(MULTICAST_INTERFACE);
-        datagramChannel.setOption(StandardSocketOptions
-                .SO_REUSEADDR, true);
-        datagramChannel.bind(new InetSocketAddress(MULTICAST_PORT));
-        datagramChannel.setOption(StandardSocketOptions
-                .IP_MULTICAST_IF, networkInterface);
-        InetAddress inetAddress = InetAddress.getByName(MULTICAST_IP);
-        MembershipKey membershipKey = datagramChannel.join
-                (inetAddress, networkInterface);
-        System.out.println("Waiting for the message...");
-        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
-        datagramChannel.receive(byteBuffer);
-        byteBuffer.flip();
-        byte[] bytes = new byte[byteBuffer.limit()];
-        byteBuffer.get(bytes, 0, byteBuffer.limit());
-        membershipKey.drop();
-        return new String(bytes);
-    }
-
     public static void main(String args[]) throws IOException {
-        ServerSocket servsock = null;
+        NamingServer ns = new NamingServer();
+        byte buf[] = new byte[1024];
+        DatagramPacket pack;
+        String received;
+        String[] receivedAr;
+        Integer newNodeID;
         try {
-            //RMI
-            NamingServer obj = new NamingServer();
-            NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(obj, 0);
-
-            // Bind the remote object's stub in the registry
-            //Registry registry = LocateRegistry.getRegistry();
-            Registry registry = LocateRegistry.createRegistry(1099);
-            registry.bind("NamingInterface", stub);
-
-            System.err.println("Server ready");
-
-            //multicast
-            NamingServer ns = new NamingServer();
-            String[] nodeMessage;
-            while(true)
-            {
-                System.out.println(ns.multicastReceive());
-                nodeMessage = ns.multicastReceive().split(" ");
-                ns.addNode(nodeMessage[0],nodeMessage[1]);
-                //send message with ns.IPmap.size(); to nodeMessage[0]
-
+            MulticastSocket s = new MulticastSocket();
+            s.joinGroup(InetAddress.getByName(MULTICAST_IP));
+            pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
+            while (true) {
+                s.receive(pack);
+                received = new String(pack.getData(), 0, pack.getLength());
+                receivedAr = received.split(" ");
+                ns.addNode(receivedAr[1], receivedAr[0]); //add node with hostname and IP sent with UDP
+                buf = ByteBuffer.allocate(4).putInt(ns.IPmap.size()).array(); //size of IP map (int) to byte array buffer
+                pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(receivedAr[0]), 5000); //send the amount of nodes to the address where the multicast came from
+                s.send(pack);
             }
-
         } catch (Exception e) {
             System.err.println("Server exception: " + e.toString());
             e.printStackTrace();
-        } finally {
-            if (servsock != null) servsock.close();
         }
     }
 }
