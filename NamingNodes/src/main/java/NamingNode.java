@@ -1,3 +1,5 @@
+import javax.xml.stream.XMLStreamException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.io.*;
@@ -23,14 +25,15 @@ public class NamingNode
         return Math.abs(hostname.hashCode()) % 32768;
     }
 
-    public InetAddress findIP()
+    //get the IP from this node
+    public InetAddress getThisIP()
     {
         try {
             Enumeration e = NetworkInterface.getNetworkInterfaces();
             while (e.hasMoreElements()) {
                 NetworkInterface n = (NetworkInterface) e.nextElement();
                 Enumeration ee = n.getInetAddresses();
-                while (ee.hasMoreElements()) {  //while lus doorheen alle
+                while (ee.hasMoreElements()) {  //while through all IPs until we find the matching IP
                     InetAddress i = (InetAddress) ee.nextElement();
                     if (i.getHostAddress().contains("192.168.0")) {
                         return i;
@@ -41,7 +44,30 @@ public class NamingNode
         return null;
     }
 
-    public static void main(String[] args)
+    //Shutdown protocol
+    public void shutdown(MulticastSocket sendingSocket, NamingInterface stub, Integer thisNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
+    {
+        String nextIP = stub.getIP(nextNodeID);
+        String previousIP = stub.getIP(previousNodeID);
+        //send nextNodeID to your previous node
+        String sendingStr = "n " + nextNodeID;
+        UDPSend(sendingSocket, sendingStr, previousIP, 5000);
+        //send previousNodeID to your next node
+        sendingStr = "p " + previousNodeID;
+        UDPSend(sendingSocket, sendingStr, nextIP, 5000);
+
+        stub.removeNode(thisNodeID); //remove node from IPMap on the server
+    }
+
+    //sending packets with UDP
+    public void UDPSend(MulticastSocket sendingSocket, String message, String ip, int port) throws IOException
+    {
+        byte buf[] = message.getBytes();
+        DatagramPacket pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(ip),port);
+        sendingSocket.send(pack);
+    }
+
+    public static void main(String[] args) throws IOException
     {
         NamingNode nn = new NamingNode();
         //IP
@@ -55,13 +81,18 @@ public class NamingNode
         Integer nextNodeID = 33000;
         Integer previousNodeID = 0;
         int amountOfNodes;
-        byte buf[];
-        DatagramPacket pack;
+        byte buf[] = new byte[1024];
+        DatagramPacket receivingPack = new DatagramPacket(buf, buf.length, InetAddress.getByName(MULTICAST_IP),MULTICAST_PORT);;
         String nameIP;
         String nodeMessage = null;
 
         try {
-            ipString = nn.findIP().getHostAddress(); // InetAddress to string
+            //RMI
+            Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
+            NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
+
+            //Bootstrap + Discovery
+            ipString = nn.getThisIP().getHostAddress(); // InetAddress to string
             hostname = "Node " + ipString.substring(10); //hostname dependant on last digit of IP
             thisNodeID = nn.calculateHash(hostname);
 
@@ -70,17 +101,15 @@ public class NamingNode
             MulticastSocket receivingSocket = new MulticastSocket();
 
             nameIP = "b " + ipString + " " + hostname; //bootstrap message
-            buf = nameIP.getBytes();
-            pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
-            sendingSock.send(pack);
+            nn.UDPSend(sendingSock, nameIP, MULTICAST_IP, MULTICAST_PORT);
 
             //Multicast receive IP + hostname from other nodes
             receivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP));
             while(true)
             {
-                receivingSocket.receive(pack);
-                received = new String(pack.getData(), 0, pack.getLength());
-                if(pack.getAddress().toString().equals("192")) //if from server IP
+                receivingSocket.receive(receivingPack);
+                received = new String(receivingPack.getData(), 0, receivingPack.getLength());
+                if(receivingPack.getAddress().toString().equals("192")) //if from server IP
                 {
                     amountOfNodes = Integer.parseInt(received);
                     if(amountOfNodes < 1)
@@ -102,33 +131,23 @@ public class NamingNode
                         if((thisNodeID < newNodeID) && (newNodeID < nextNodeID)) //This is the previous node
                         {
                             nextNodeID = newNodeID;
-                            nodeMessage = "p " + thisNodeID + " " + nextNodeID; //p for previous nodeID message
-                            buf = nodeMessage.getBytes();
-                            pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(receivedAr[0]), 4999); //respond to the starting node(IP: ReceivedAr[0]) with the current ID and the next ID
-                            sendingSock.send(pack);
+                            nodeMessage = "p " + thisNodeID; //p for previous nodeID message
+                            nn.UDPSend(sendingSock, nodeMessage,receivedAr[0], 4999 );
                         }
                         else if((previousNodeID < newNodeID) && (newNodeID < thisNodeID)) //This is the next node
                         {
                             previousNodeID = newNodeID;
-                            nodeMessage = "n " + thisNodeID + " " + previousNodeID;
-                            buf = nodeMessage.getBytes();
-                            pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(receivedAr[0]), 4999);
-                            sendingSock.send(pack);
+                            nodeMessage = "n " + thisNodeID;
+                            nn.UDPSend(sendingSock, nodeMessage,receivedAr[0], 4999 );
                         }
                     }
                     else if(receivedAr[0].equals("p")) //its a previous node message
                     {
-                        if(Integer.valueOf(receivedAr[2]).equals(thisNodeID)) //check if his nextID is correct with your ID
-                        {
-                            previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
-                        }
+                        previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
                     }
                     else if(receivedAr[0].equals("n")) //its a next node message
                     {
-                        if(Integer.valueOf(receivedAr[2]).equals(thisNodeID)) //check if his previousID is correct with your ID
-                        {
-                            nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
-                        }
+                        nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                     }
                 }
             }
