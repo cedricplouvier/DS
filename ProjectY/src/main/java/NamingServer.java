@@ -1,35 +1,24 @@
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.*;
-import java.nio.channels.MembershipKey;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.Map;
-import java.util.List;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.xml.stream.*;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
 
 public class NamingServer implements NamingInterface {
     public TreeMap<Integer, String> IPmap = new TreeMap<>();
     public TreeMap<Integer, Integer> fileOwnerMap = new TreeMap<>();
     String[] fileArray = {"Taak1.docx", "Song.mp3", "Uitgaven.xls", "loon.pdf", "readme.txt", "download.rar"};
 
-    private static final String MULTICAST_INTERFACE = "eth0";
     private static final int MULTICAST_PORT = 4321;
     private static final String MULTICAST_IP = "225.4.5.6";
 
-    public NamingServer() {
-    }
-
-    public Integer calculateHash(String hostname) {
-        return Math.abs(hostname.hashCode()) % 32768;
-    }
+    public NamingServer() {}
 
     //add node to IPmap, recalculate the file distribution and write the IPmap to an XML file
     public void addNode(String hostname, String IP) throws IOException, XMLStreamException {
@@ -123,11 +112,12 @@ public class NamingServer implements NamingInterface {
 
     public static void main(String args[]) throws IOException {
         NamingServer ns = new NamingServer();
-        byte buf[] = new byte[1024];
-        DatagramPacket pack;
+        byte MCbuf[] = new byte[1024];
+        byte UCbuf[] = new byte[1024];
+        DatagramPacket MCpacket;
+        DatagramPacket UCpacket;
         String received;
         String[] receivedAr;
-        Integer newNodeID;
         try {
             //RMI
             NamingServer obj = new NamingServer();
@@ -138,19 +128,41 @@ public class NamingServer implements NamingInterface {
             Registry registry = LocateRegistry.createRegistry(1099);
             registry.bind("NamingInterface", stub);
 
-            //Bootstrap + Discovery
-            MulticastSocket sendingSocket = new MulticastSocket();
-            MulticastSocket receivingSocket = new MulticastSocket();
-            receivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP));
-            pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
+            //create Multicast and unicast sockets
+            MulticastSocket MCreceivingSocket = new MulticastSocket();
+            DatagramSocket UCreceivingSocket = new DatagramSocket();
+            DatagramSocket UCsendingSocket = new DatagramSocket();
+            //join the multicast group
+            MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP));
+            MCpacket = new DatagramPacket(MCbuf, MCbuf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
             while (true) {
-                receivingSocket.receive(pack);
-                received = new String(pack.getData(), 0, pack.getLength());
+                //wait for multicast from new nodes in the network
+                MCreceivingSocket.receive(MCpacket);
+                received = new String(MCpacket.getData(), 0, MCpacket.getLength());
                 receivedAr = received.split(" ");
-                ns.addNode(receivedAr[1], receivedAr[0]); //add node with hostname and IP sent with UDP
-                buf = ByteBuffer.allocate(4).putInt(ns.IPmap.size()).array(); //size of IP map (int) to byte array buffer
-                pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(receivedAr[0]), 5000); //send the amount of nodes to the address where the multicast came from
-                sendingSocket.send(pack);
+                ns.addNode(receivedAr[1], receivedAr[0]); //add node with hostname and IP sent with UDP multicast
+                UCbuf = ByteBuffer.allocate(4).putInt(ns.IPmap.size()).array(); //size of IP map (int) to byte array buffer
+                UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[0]), 5000); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
+                UCsendingSocket.send(UCpacket);
+
+                //Unicast receive (failure)
+                UCpacket = new DatagramPacket(UCbuf, UCbuf.length);
+                //get IP and port of sender
+                InetAddress senderIP = UCpacket.getAddress();
+                int senderPort = UCpacket.getPort();
+                UCreceivingSocket.receive(UCpacket);
+                received = new String(UCpacket.getData(), 0, UCpacket.getLength());
+                receivedAr = received.split(" ");
+                if(receivedAr[0].equals("f")) //make sure its a failure message
+                {
+                    Integer failedNode = Integer.valueOf(receivedAr[1]);
+                    Integer previousNode = ns.IPmap.lowerKey(failedNode); //find the previous and next node of the failed node
+                    Integer nextNode = ns.IPmap.higherKey(failedNode);
+                    String message = Integer.toString(previousNode) + Integer.toString(nextNode);
+                    UCbuf = message.getBytes();
+                    UCpacket = new DatagramPacket(UCbuf, UCbuf.length, senderIP, senderPort);
+                    UCsendingSocket.send(UCpacket); //send it to the node, who detected the failed node. This node will forward it to the previous and next node
+                }
             }
         } catch (Exception e) {
             System.err.println("Server exception: " + e.toString());

@@ -1,20 +1,14 @@
 import javax.xml.stream.XMLStreamException;
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.net.InetAddress;
-import java.net.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.MembershipKey;
 
 
 public class NamingNode
 {
-    private static final String MULTICAST_INTERFACE = "eth0";
     private static final int MULTICAST_PORT = 4321;
     private static final String MULTICAST_IP = "225.4.5.6";
 
@@ -45,7 +39,7 @@ public class NamingNode
     }
 
     //Shutdown protocol
-    public void shutdown(MulticastSocket sendingSocket, NamingInterface stub, Integer thisNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
+    public void shutdown(DatagramSocket sendingSocket, NamingInterface stub, Integer thisNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
     {
         String nextIP = stub.getIP(nextNodeID);
         String previousIP = stub.getIP(previousNodeID);
@@ -59,12 +53,35 @@ public class NamingNode
         stub.removeNode(thisNodeID); //remove node from IPMap on the server
     }
 
-    //sending packets with UDP
-    public void UDPSend(MulticastSocket sendingSocket, String message, String ip, int port) throws IOException
+    //sending packets with UDP, unicast/multicast
+    public void UDPSend(DatagramSocket sendingSocket, String message, String ip, int port) throws IOException
     {
         byte buf[] = message.getBytes();
         DatagramPacket pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(ip),port);
         sendingSocket.send(pack);
+    }
+
+    //Failure protocol
+    public void failure(Integer failedNode, NamingInterface stub) throws IOException, XMLStreamException
+    {
+        DatagramSocket socket = new DatagramSocket();
+        String failureMessage = "f " + failedNode;
+        byte buf[] = failureMessage.getBytes();
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, InetAddress.getByName("192.168.0.4"),4445);
+        socket.send(packet); //send failure message to nameserver
+        packet = new DatagramPacket(buf, buf.length);
+        socket.receive(packet); //the server will reply with the next and previous node of the failed one
+        String received = new String(packet.getData(), 0, packet.getLength());
+        String receivedAr[] = received.split(" ");
+        //give previous node of the failed one, his new next node
+        Integer previousNode = Integer.valueOf(receivedAr[0]);
+        Integer nextNode = Integer.valueOf(receivedAr[1]);
+        String nodeMessage = "n " + nextNode;
+        UDPSend(socket, nodeMessage, stub.getIP(previousNode), 4445);
+        //give next node of the failed one, his new previous node
+        nodeMessage = "p " + previousNode;
+        UDPSend(socket, nodeMessage, stub.getIP(nextNode), 4445);
+        socket.close();
     }
 
     public static void main(String[] args) throws IOException
@@ -97,24 +114,24 @@ public class NamingNode
             thisNodeID = nn.calculateHash(hostname);
 
             //Multicast send IP + hostname to all
-            MulticastSocket sendingSock = new MulticastSocket(); //sending and receiving socket are best split
-            MulticastSocket receivingSocket = new MulticastSocket();
+            MulticastSocket MCSocket = new MulticastSocket();
+            DatagramSocket UCsendingSocket = new DatagramSocket();
 
             nameIP = "b " + ipString + " " + hostname; //bootstrap message
-            nn.UDPSend(sendingSock, nameIP, MULTICAST_IP, MULTICAST_PORT);
+            nn.UDPSend(MCSocket, nameIP, MULTICAST_IP, MULTICAST_PORT);
 
             //Multicast receive IP + hostname from other nodes
-            receivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP));
+            MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP));
             while(true)
             {
-                receivingSocket.receive(receivingPack);
+                MCSocket.receive(receivingPack);
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
-                if(receivingPack.getAddress().toString().equals("192")) //if from server IP
+                if(receivingPack.getAddress().toString().equals("192.168.0.4")) //if from server IP
                 {
                     amountOfNodes = Integer.parseInt(received);
                     if(amountOfNodes < 1)
                     {
-                        newNodeID = thisNodeID;
+                        nextNodeID = thisNodeID;
                         previousNodeID = thisNodeID;
                     }
                     else
@@ -132,13 +149,13 @@ public class NamingNode
                         {
                             nextNodeID = newNodeID;
                             nodeMessage = "p " + thisNodeID; //p for previous nodeID message
-                            nn.UDPSend(sendingSock, nodeMessage,receivedAr[0], 4999 );
+                            nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4999 );
                         }
                         else if((previousNodeID < newNodeID) && (newNodeID < thisNodeID)) //This is the next node
                         {
                             previousNodeID = newNodeID;
                             nodeMessage = "n " + thisNodeID;
-                            nn.UDPSend(sendingSock, nodeMessage,receivedAr[0], 4999 );
+                            nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4999 );
                         }
                     }
                     else if(receivedAr[0].equals("p")) //its a previous node message
@@ -151,6 +168,8 @@ public class NamingNode
                     }
                 }
             }
+            /*MCSocket.close(); put this somewhere
+            UCsendingSocket.close();*/
         }catch(Exception e)
         {
             System.err.println("Client exception: " + e.toString());
