@@ -4,6 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.*;
 import java.rmi.RemoteException;
+import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -18,23 +19,23 @@ public class NamingServer implements NamingInterface {
     public TreeMap<Integer, Integer> fileOwnerMap = new TreeMap<>();
     String[] fileArray = {"Taak1.docx", "Song.mp3", "Uitgaven.xls", "loon.pdf", "readme.txt", "download.rar"};
 
+    public static NamingServer ns = new NamingServer();
+
     private static final int MULTICAST_PORT = 4321;
     private static final String MULTICAST_IP = "225.4.5.6";
     private static final String MULTICAST_INTERFACE = "eth0";
 
-    public NamingServer()
-    {
-    }
+    public NamingServer() {}
 
     //add node to IPmap, recalculate the file distribution and write the IPmap to an XML file
     public void addNode(String hostname, String IP) throws IOException, XMLStreamException
     {
         Integer nodeID = Math.abs(hostname.hashCode()) % 32768;
-        if (!this.IPmap.containsKey(nodeID)) {
-            this.IPmap.put(nodeID, IP);
+        if (!IPmap.containsKey(nodeID)) {
+            IPmap.put(nodeID, IP);
             recalculate();
             writeToXML();
-            for (Map.Entry<Integer, String> entry : this.IPmap.entrySet()) {
+            for (Map.Entry<Integer, String> entry : IPmap.entrySet()) {
                 System.out.println("Key: " + entry.getKey() + ". Value: " + entry.getValue());
             }
         } else System.out.println("Node already in use.");
@@ -51,37 +52,35 @@ public class NamingServer implements NamingInterface {
     //remove node from IPmap, recalculate the file distribution and write the IPmap to an XML file
     public void removeNode(Integer nodeID) throws IOException, XMLStreamException
     {
-        if (this.IPmap.containsKey(nodeID)) {
-            System.out.println("a");
-            this.IPmap.remove(nodeID);
-            fileOwnerMap.remove(nodeID);
-            recalculate();
-            writeToXML();
-            for (Entry<Integer, String> entry : this.IPmap.entrySet()) {
-                Integer key = entry.getKey();
-                String value = entry.getValue();
+        if (ns.IPmap.containsKey(nodeID)) {
 
-                System.out.printf("%d : %s\n", key, value);
+            ns.IPmap.remove(nodeID);
+            ns.fileOwnerMap.remove(nodeID);
+            if (ns.IPmap.size() > 1)
+            {
+                recalculate();
+                writeToXML();
             }
+            System.out.printf("Node removed");
         } else System.out.println("Node not in system.");
     }
     //what node calls, via RMI, to know the IP of the node a file is located on
     public String fileLocator(String filename)
     {
         int fileHash = Math.abs(filename.hashCode()) % 32768;
-        Integer closestKey = this.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
+        Integer closestKey = ns.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
         if (closestKey == null) {
-            closestKey = this.IPmap.lastKey(); //returns highest key in this map
+            closestKey = ns.IPmap.lastKey(); //returns highest key in this map
         }
-        return this.IPmap.get(closestKey); //returns IP associated with this nodeID
+        return ns.IPmap.get(closestKey); //returns IP associated with this nodeID
     }
 
     //distributes the files over all nodes, evenly
     public int filePlacer(String filename) {
         int fileHash = Math.abs(filename.hashCode()) % 32768;
-        Integer closestKey = this.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
+        Integer closestKey = ns.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
         if (closestKey == null) {
-            closestKey = this.IPmap.lastKey(); //returns highest key in this map
+            closestKey = ns.IPmap.lastKey(); //returns highest key in this map
         }
         return closestKey; //return ID of node where file needs to be stored.
     }
@@ -90,7 +89,7 @@ public class NamingServer implements NamingInterface {
     public void recalculate()
     {
         for (int i = 0; i < fileArray.length; i++) {
-            fileOwnerMap.put((Math.abs(fileArray[i].hashCode()) % 32768), filePlacer(fileArray[i]));
+            ns.fileOwnerMap.put((Math.abs(fileArray[i].hashCode()) % 32768), filePlacer(fileArray[i]));
         }
     }
 
@@ -106,7 +105,7 @@ public class NamingServer implements NamingInterface {
                 xsw.writeStartElement("entries");
 
                 // Do the Collection
-                for (Map.Entry<Integer, String> e : this.IPmap.entrySet()) {
+                for (Map.Entry<Integer, String> e : ns.IPmap.entrySet()) {
                     xsw.writeStartElement("entry");
                     xsw.writeAttribute("key", e.getKey().toString());
                     xsw.writeAttribute("value", e.getValue().toString());
@@ -133,11 +132,10 @@ public class NamingServer implements NamingInterface {
     //get the IP of a node in the system
     public String getIP(Integer nodeID) throws RemoteException
     {
-        return this.IPmap.get(nodeID);
+        return ns.IPmap.get(nodeID);
     }
 
     public static void main(String args[]) throws IOException {
-        NamingServer ns = new NamingServer();
         byte MCbuf[] = new byte[1024];
         byte UCbuf[] = new byte[1024];
         DatagramPacket MCpacket;
@@ -151,8 +149,7 @@ public class NamingServer implements NamingInterface {
 
         try {
             //RMI
-            NamingServer obj = new NamingServer();
-            NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(obj, 0);
+            NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(ns, 0);
 
             // Bind the remote object's stub in the registry
             //Registry registry = LocateRegistry.getRegistry();
@@ -168,14 +165,14 @@ public class NamingServer implements NamingInterface {
             MCpacket = new DatagramPacket(MCbuf, MCbuf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
             System.out.println("Joined MC");
             while (running) {
-                UCpacket = new DatagramPacket(UCbuf, UCbuf.length);
-                UCsendingSocket.receive(UCpacket);
-                received = new String(UCpacket.getData(), 0, UCpacket.getLength());
+                MCpacket = new DatagramPacket(UCbuf, UCbuf.length);
+                MCreceivingSocket.receive(MCpacket);
+                received = new String(MCpacket.getData(), 0, MCpacket.getLength());
                 receivedAr = received.split(" ");
                 ns.addNode(receivedAr[2], receivedAr[1]); //add node with hostname and IP sent with UDP multicast
                 String mapSize = Integer.toString(ns.IPmap.size());
                 UCbuf = mapSize.getBytes();
-                UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 5000); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
+                UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 4446); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
                 UCsendingSocket.send(UCpacket);
             }
         } catch (Exception e) {
