@@ -11,6 +11,7 @@ public class NamingNode
 {
     private static final int MULTICAST_PORT = 4321;
     private static final String MULTICAST_IP = "225.4.5.6";
+    private static final String MULTICAST_INTERFACE = "eth0";
 
     public NamingNode() {}
 
@@ -121,7 +122,7 @@ public class NamingNode
             nn.UDPSend(MCSocket, nameIP, MULTICAST_IP, MULTICAST_PORT);
 
             //Multicast receive IP + hostname from other nodes
-            MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP));
+            MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
             while(true)
             {
                 MCSocket.receive(receivingPack);

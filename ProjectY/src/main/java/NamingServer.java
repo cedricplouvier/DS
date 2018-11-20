@@ -4,6 +4,7 @@ import java.net.*;
 import java.rmi.RemoteException;
 import java.util.TreeMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
@@ -17,6 +18,7 @@ public class NamingServer implements NamingInterface {
 
     private static final int MULTICAST_PORT = 4321;
     private static final String MULTICAST_IP = "225.4.5.6";
+    private static final String MULTICAST_INTERFACE = "eth0";
 
     public NamingServer() {}
 
@@ -27,6 +29,12 @@ public class NamingServer implements NamingInterface {
             IPmap.put(nodeID, IP);
             recalculate();
             writeToXML();
+            for (Entry<Integer, String> entry : IPmap.entrySet()) {
+                Integer key = entry.getKey();
+                String value = entry.getValue();
+
+                System.out.printf("%d : %s\n", key, value);
+            }
         } else System.out.println("Node already in use.");
     }
 
@@ -70,7 +78,7 @@ public class NamingServer implements NamingInterface {
 
     //Write the IPmap to and XML file
     public void writeToXML() throws IOException, XMLStreamException {
-        FileWriter out = new FileWriter("/home/pi/Documents/distributed/map.xml");
+        FileWriter out = new FileWriter("D:\\Users\\Maximiliaan\\map.xml"); ///home/pi/Documents/distributed/map.xml
         XMLStreamWriter xsw = null;
         try {
             try {
@@ -133,7 +141,7 @@ public class NamingServer implements NamingInterface {
             DatagramSocket UCreceivingSocket = new DatagramSocket();
             DatagramSocket UCsendingSocket = new DatagramSocket();
             //join the multicast group
-            MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP));
+            MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
             MCpacket = new DatagramPacket(MCbuf, MCbuf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
             while (true) {
                 //wait for multicast from new nodes in the network
