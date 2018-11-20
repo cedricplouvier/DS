@@ -29,18 +29,38 @@ public class NamingServer implements NamingInterface {
             IPmap.put(nodeID, IP);
             recalculate();
             writeToXML();
-            for (Entry<Integer, String> entry : IPmap.entrySet()) {
-                Integer key = entry.getKey();
-                String value = entry.getValue();
 
-                System.out.printf("%d : %s\n", key, value);
-            }
         } else System.out.println("Node already in use.");
+    }
+
+    //returns previous and next node of failed node
+    public String failure(int failedNode)
+    {
+        Integer previousNode = IPmap.lowerKey(failedNode); //find the previous and next node of the failed node
+        Integer nextNode = IPmap.higherKey(failedNode);
+        return Integer.toString(previousNode) + Integer.toString(nextNode); //return both
+    }
+
+    public void printMap(){
+        for (Entry<Integer, String> entry : IPmap.entrySet()) {
+            Integer key = entry.getKey();
+            String value = entry.getValue();
+
+            System.out.printf("%d : %s\n", key, value);
+        }
     }
 
     //remove node from IPmap, recalculate the file distribution and write the IPmap to an XML file
     public void removeNode(Integer nodeID) throws IOException, XMLStreamException {
+        //System.out.println(IPmap.get(8784));
+        for (Entry<Integer, String> entry : IPmap.entrySet()) {
+            Integer key = entry.getKey();
+            String value = entry.getValue();
+
+            System.out.printf("%d : %s\n", key, value);
+        }
         if (IPmap.containsKey(nodeID)) {
+            System.out.println("a");
             IPmap.remove(nodeID);
             fileOwnerMap.remove(nodeID);
             recalculate();
@@ -144,7 +164,7 @@ public class NamingServer implements NamingInterface {
 
             //create Multicast and unicast sockets
             MulticastSocket MCreceivingSocket = new MulticastSocket(MULTICAST_PORT);
-            DatagramSocket UCreceivingSocket = new DatagramSocket();
+            DatagramSocket UCreceivingSocket = new DatagramSocket(4448);
             DatagramSocket UCsendingSocket = new DatagramSocket();
             //join the multicast group
             MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
@@ -154,31 +174,17 @@ public class NamingServer implements NamingInterface {
                 //wait for multicast from new nodes in the network
                 MCreceivingSocket.receive(MCpacket);
                 received = new String(MCpacket.getData(), 0, MCpacket.getLength());
-                System.out.println(received);
                 receivedAr = received.split(" ");
                 ns.addNode(receivedAr[2], receivedAr[1]); //add node with hostname and IP sent with UDP multicast
-                UCbuf = ByteBuffer.allocate(4).putInt(ns.IPmap.size()).array(); //size of IP map (int) to byte array buffer
+                ns.printMap();
+                String mapSize = Integer.toString(ns.IPmap.size());
+                UCbuf= mapSize.getBytes();
                 UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 5000); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
                 UCsendingSocket.send(UCpacket);
+                ns.printMap();
 
-                //Unicast receive (failure)
-                UCpacket = new DatagramPacket(UCbuf, UCbuf.length);
-                //get IP and port of sender
-                InetAddress senderIP = UCpacket.getAddress();
-                int senderPort = UCpacket.getPort();
-                UCreceivingSocket.receive(UCpacket);
-                received = new String(UCpacket.getData(), 0, UCpacket.getLength());
-                receivedAr = received.split(" ");
-                if(receivedAr[0].equals("f")) //make sure its a failure message
-                {
-                    Integer failedNode = Integer.valueOf(receivedAr[1]);
-                    Integer previousNode = ns.IPmap.lowerKey(failedNode); //find the previous and next node of the failed node
-                    Integer nextNode = ns.IPmap.higherKey(failedNode);
-                    String message = Integer.toString(previousNode) + Integer.toString(nextNode);
-                    UCbuf = message.getBytes();
-                    UCpacket = new DatagramPacket(UCbuf, UCbuf.length, senderIP, senderPort);
-                    UCsendingSocket.send(UCpacket); //send it to the node, who detected the failed node. This node will forward it to the previous and next node
-                }
+
+                ns.printMap();
             }
         } catch (Exception e) {
             System.err.println("Server exception: " + e.toString());
