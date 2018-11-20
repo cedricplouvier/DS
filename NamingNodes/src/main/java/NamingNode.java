@@ -115,7 +115,7 @@ public class NamingNode
             thisNodeID = nn.calculateHash(hostname);
 
             //Multicast send IP + hostname to all
-            MulticastSocket MCSocket = new MulticastSocket();
+            MulticastSocket MCSocket = new MulticastSocket(MULTICAST_PORT);
             DatagramSocket UCsendingSocket = new DatagramSocket();
 
             nameIP = "b " + ipString + " " + hostname; //bootstrap message
@@ -134,6 +134,7 @@ public class NamingNode
                     {
                         nextNodeID = thisNodeID;
                         previousNodeID = thisNodeID;
+                        System.out.println(nextNodeID +" " + previousNodeID);
                     }
                     else
                     {
@@ -168,6 +169,7 @@ public class NamingNode
                         nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                     }
                 }
+                nn.shutdown(UCsendingSocket, stub, thisNodeID, nextNodeID, previousNodeID);
             }
             /*MCSocket.close(); put this somewhere
             UCsendingSocket.close();*/

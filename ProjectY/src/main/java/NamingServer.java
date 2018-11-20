@@ -45,6 +45,12 @@ public class NamingServer implements NamingInterface {
             fileOwnerMap.remove(nodeID);
             recalculate();
             writeToXML();
+            for (Entry<Integer, String> entry : IPmap.entrySet()) {
+                Integer key = entry.getKey();
+                String value = entry.getValue();
+
+                System.out.printf("%d : %s\n", key, value);
+            }
         } else System.out.println("Node not in system.");
     }
     //what node calls, via RMI, to know the IP of the node a file is located on
@@ -78,7 +84,7 @@ public class NamingServer implements NamingInterface {
 
     //Write the IPmap to and XML file
     public void writeToXML() throws IOException, XMLStreamException {
-        FileWriter out = new FileWriter("D:\\Users\\Maximiliaan\\map.xml"); ///home/pi/Documents/distributed/map.xml
+        FileWriter out = new FileWriter("C:\\Users\\Maximiliaan\\map.xml"); ///home/pi/Documents/distributed/map.xml
         XMLStreamWriter xsw = null;
         try {
             try {
@@ -137,20 +143,22 @@ public class NamingServer implements NamingInterface {
             registry.bind("NamingInterface", stub);
 
             //create Multicast and unicast sockets
-            MulticastSocket MCreceivingSocket = new MulticastSocket();
+            MulticastSocket MCreceivingSocket = new MulticastSocket(MULTICAST_PORT);
             DatagramSocket UCreceivingSocket = new DatagramSocket();
             DatagramSocket UCsendingSocket = new DatagramSocket();
             //join the multicast group
             MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
             MCpacket = new DatagramPacket(MCbuf, MCbuf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
+            System.out.println("Joined MC");
             while (true) {
                 //wait for multicast from new nodes in the network
                 MCreceivingSocket.receive(MCpacket);
                 received = new String(MCpacket.getData(), 0, MCpacket.getLength());
+                System.out.println(received);
                 receivedAr = received.split(" ");
-                ns.addNode(receivedAr[1], receivedAr[0]); //add node with hostname and IP sent with UDP multicast
+                ns.addNode(receivedAr[2], receivedAr[1]); //add node with hostname and IP sent with UDP multicast
                 UCbuf = ByteBuffer.allocate(4).putInt(ns.IPmap.size()).array(); //size of IP map (int) to byte array buffer
-                UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[0]), 5000); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
+                UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 5000); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
                 UCsendingSocket.send(UCpacket);
 
                 //Unicast receive (failure)
