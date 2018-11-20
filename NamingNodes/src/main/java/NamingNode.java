@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.net.InetAddress;
+import java.rmi.server.*;
 
 
 public class NamingNode
@@ -51,36 +52,40 @@ public class NamingNode
         String hostname;
         String ipString;
         InetAddress ip = null;
+
         try {
+
+            //RMI connection
+            Registry registry = LocateRegistry.getRegistry("192.168.23.1"); //connect to right interface of namingserver (normally 192.168.0.4)
+            NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
+            String response = stub.sayHello();
+            System.out.println(response);
+
+            //add node
             Enumeration e = NetworkInterface.getNetworkInterfaces();
             while (e.hasMoreElements()) {
                 NetworkInterface n = (NetworkInterface) e.nextElement();
                 Enumeration ee = n.getInetAddresses();
                 while (ee.hasMoreElements()) {  //while lus doorheen alle
                     InetAddress i = (InetAddress) ee.nextElement();
-                    if (i.getHostAddress().contains("192.168.0")){
+
+                    if (i.getHostAddress().contains("192.168.1.")){ //watch out for right IP range in pi : (192.168.0.)
+
                         ip = i;
+                        System.out.println(ip.getHostAddress());
 
                     }
                 }
             }
-            ipString = ip.getHostAddress(); //ip in Stringformaat
-            hostname = "Node " + ipString.substring(10); //hostname declareren met laatste getal van ip
-            //print commando's
-            System.out.println("ip address is " + ipString);
-            System.out.println("hostname is " + hostname);
-            System.out.println(ip);
+            ipString = ip.getHostAddress(); //ip in Stringformat
+            hostname = "Node " + ipString.substring(11); //declare hostname with last digit of IP
 
-            //RMI
-            Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
-            NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
-
-            String NamingServerURL = "rmi:"
             if (ip != null) {
                 stub.addNode(hostname, ipString); //RMI get added to the MAP
             }
-        }catch(Exception e)
-        {
+
+
+        } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();
         }

@@ -1,6 +1,9 @@
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.rmi.Naming;
+import java.rmi.server.*;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.Map;
@@ -11,19 +14,29 @@ import java.rmi.server.UnicastRemoteObject;
 import javax.xml.stream.*;
 
 public class NamingServer implements NamingInterface {
+
     public TreeMap<Integer, String> IPmap = new TreeMap<>();
     public TreeMap<Integer, Integer> fileOwnerMap = new TreeMap<>();
     String[] fileArray = {"Taak1.docx", "Song.mp3", "Uitgaven.xls", "loon.pdf", "readme.txt", "download.rar"};
 
+
     public NamingServer() {
     }
 
+    public String sayHello() {
+        return "connection made!";
+    }
+
+
     public void addNode(String hostname, String IP) throws IOException, XMLStreamException {
+
         Integer nodeID = Math.abs(hostname.hashCode()) % 32768;
+
         if (!IPmap.containsKey(nodeID)) {
             IPmap.put(nodeID, IP);
+            System.out.println(hostname +  " and ip " + IP);
             recalculate();
-            writeToXML();
+            //writeToXML(); watch out, in filewriter must stand the right directory!!
         } else System.out.println("Node already in use.");
     }
 
@@ -64,12 +77,14 @@ public class NamingServer implements NamingInterface {
     }
 
     public void writeToXML() throws IOException, XMLStreamException {
-        FileWriter out = new FileWriter("/home/pi/Documents/distributed/map.xml");
+        FileOutputStream outPC = new FileOutputStream("C:\\Users\\Ruben Joosen\\Documents\\AntwerpenU\\Semester 5\\Distributed Systems\\ProjectY\\DS\\ProjectY\\map.xml");
+        FileOutputStream out = new FileOutputStream("/home/pi/Documents/RMISERVER/map.xml");
+
         XMLStreamWriter xsw = null;
         try {
             try {
                 XMLOutputFactory xof = XMLOutputFactory.newInstance();
-                xsw = xof.createXMLStreamWriter(out);
+                xsw = xof.createXMLStreamWriter(out,"UTF-8");
                 xsw.writeStartDocument("utf-8", "1.0");
                 xsw.writeStartElement("entries");
 
@@ -99,8 +114,6 @@ public class NamingServer implements NamingInterface {
     }
 
     public static void main(String args[]) throws IOException {
-        ServerSocket servsock = null;
-        try {
             /*TCP
             servsock = new ServerSocket(6789);
             ClientWorker w;
@@ -117,22 +130,21 @@ public class NamingServer implements NamingInterface {
             }*/
 
             //RMI
-            NamingServer obj = new NamingServer();
-            NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(obj, 0);
+            try {
+                NamingServer obj = new NamingServer();
+                NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(obj, 0);
 
+                // Bind the remote object's stub in the registry
+                //Registry registry = LocateRegistry.getRegistry();
+                Registry registry = LocateRegistry.createRegistry(1099);
+                registry.bind("NamingInterface", stub);
+                System.out.println(registry); //print the right IP to connect to in Client
 
-            // Bind the remote object's stub in the registry
-            //Registry registry = LocateRegistry.getRegistry();
-            System.setProperty("java.rmi.server.hostname","192.168.0.4");
-            Registry registry = LocateRegistry.createRegistry(1099);
-            registry.bind("NamingInterface", stub);
+                System.err.println("Server ready");
+            } catch (Exception e) {
+                System.err.println("Server exception: " + e.toString());
+                e.printStackTrace();
+            }
 
-            System.err.println("Server ready");
-        } catch (Exception e) {
-            System.err.println("Server exception: " + e.toString());
-            e.printStackTrace();
-        } finally {
-            if (servsock != null) servsock.close();
         }
-    }
 }
