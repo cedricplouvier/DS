@@ -46,10 +46,10 @@ public class NamingNode
         String previousIP = stub.getIP(previousNodeID);
         //send nextNodeID to your previous node
         String sendingStr = "n " + nextNodeID;
-        UDPSend(sendingSocket, sendingStr, previousIP, 5000);
+        UDPSend(sendingSocket, sendingStr, previousIP, 4446);
         //send previousNodeID to your next node
         sendingStr = "p " + previousNodeID;
-        UDPSend(sendingSocket, sendingStr, nextIP, 5000);
+        UDPSend(sendingSocket, sendingStr, nextIP, 4446);
 
         stub.removeNode(thisNodeID); //remove node from IPMap on the server
     }
@@ -110,7 +110,7 @@ public class NamingNode
             //Multicast send IP + hostname to all
             MulticastSocket MCSocket = new MulticastSocket(MULTICAST_PORT);
             DatagramSocket UCsendingSocket = new DatagramSocket();
-            DatagramSocket UCreceivingSocket = new DatagramSocket(5000);
+            DatagramSocket UCreceivingSocket = new DatagramSocket(4446);
 
             nameIP = "b " + ipString + " " + hostname; //bootstrap message
             nn.UDPSend(MCSocket, nameIP, MULTICAST_IP, MULTICAST_PORT);
@@ -162,11 +162,9 @@ public class NamingNode
                         nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                     }
                 }
-                nn.shutdown(UCsendingSocket, stub, thisNodeID, nextNodeID, previousNodeID);
-                break;
+                //nn.shutdown(UCsendingSocket, stub, thisNodeID, nextNodeID, previousNodeID); //works
+                //break;
             }
-            /*MCSocket.close(); put this somewhere
-            UCsendingSocket.close();*/
         }catch(Exception e)
         {
             System.err.println("Client exception: " + e.toString());
