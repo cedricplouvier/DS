@@ -4,15 +4,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.*;
 import java.rmi.RemoteException;
-import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.xml.stream.*;
-import java.nio.ByteBuffer;
 
 public class NamingServer implements NamingInterface {
     public TreeMap<Integer, String> IPmap = new TreeMap<>();
@@ -65,14 +62,14 @@ public class NamingServer implements NamingInterface {
         } else System.out.println("Node not in system.");
     }
     //what node calls, via RMI, to know the IP of the node a file is located on
-    public String fileLocator(String filename)
+    public Integer fileLocator(String filename)
     {
         int fileHash = Math.abs(filename.hashCode()) % 32768;
         Integer closestKey = ns.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
         if (closestKey == null) {
             closestKey = ns.IPmap.lastKey(); //returns highest key in this map
         }
-        return ns.IPmap.get(closestKey); //returns IP associated with this nodeID
+        return closestKey; //returns IP associated with this nodeID
     }
 
     //distributes the files over all nodes, evenly
@@ -160,6 +157,7 @@ public class NamingServer implements NamingInterface {
             MCreceivingSocket = new MulticastSocket(MULTICAST_PORT);
             UCreceivingSocket = new DatagramSocket(4448);
             UCsendingSocket = new DatagramSocket();
+
             //join the multicast group
             MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
             MCpacket = new DatagramPacket(MCbuf, MCbuf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
