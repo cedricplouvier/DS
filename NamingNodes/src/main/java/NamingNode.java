@@ -111,12 +111,13 @@ public class NamingNode
 
             //Bootstrap + Discovery
             ipString = nn.getThisIP().getHostAddress(); // InetAddress to string
-            hostname = "Node " + ipString.substring(10); //hostname dependant on last digit of IP
+            hostname = "Node" + ipString.substring(10); //hostname dependant on last digit of IP
             thisNodeID = nn.calculateHash(hostname);
 
             //Multicast send IP + hostname to all
             MulticastSocket MCSocket = new MulticastSocket(MULTICAST_PORT);
             DatagramSocket UCsendingSocket = new DatagramSocket();
+            DatagramSocket ReceivingSocket = new DatagramSocket(5000);
 
             nameIP = "b " + ipString + " " + hostname; //bootstrap message
             nn.UDPSend(MCSocket, nameIP, MULTICAST_IP, MULTICAST_PORT);
@@ -125,16 +126,16 @@ public class NamingNode
             MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
             while(true)
             {
-                MCSocket.receive(receivingPack);
+                ReceivingSocket.receive(receivingPack);
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
-                if(receivingPack.getAddress().toString().equals("192.168.0.4")) //if from server IP
+                if(receivingPack.getAddress().toString().equals("/192.168.0.4")) //if from server IP
                 {
                     amountOfNodes = Integer.parseInt(received);
-                    if(amountOfNodes < 1)
+                    //amountOfNodes = received;
+                    if(amountOfNodes <= 1)
                     {
                         nextNodeID = thisNodeID;
                         previousNodeID = thisNodeID;
-                        System.out.println(nextNodeID +" " + previousNodeID);
                     }
                     else
                     {
@@ -144,32 +145,31 @@ public class NamingNode
                 else //if from any other IP => node
                 {
                     receivedAr = received.split(" ");
-                    if(receivedAr[0].equals("b")) //b for bootstrap message
+                    if (receivedAr[0].equals("b")) //b for bootstrap message
                     {
                         newNodeID = nn.calculateHash(receivedAr[1]);
-                        if((thisNodeID < newNodeID) && (newNodeID < nextNodeID)) //This is the previous node
+                        if ((thisNodeID < newNodeID) && (newNodeID < nextNodeID)) //This is the previous node
                         {
                             nextNodeID = newNodeID;
                             nodeMessage = "p " + thisNodeID; //p for previous nodeID message
-                            nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4999 );
-                        }
-                        else if((previousNodeID < newNodeID) && (newNodeID < thisNodeID)) //This is the next node
+                            nn.UDPSend(UCsendingSocket, nodeMessage, receivedAr[0], 4999);
+                        } else if ((previousNodeID < newNodeID) && (newNodeID < thisNodeID)) //This is the next node
                         {
                             previousNodeID = newNodeID;
                             nodeMessage = "n " + thisNodeID;
-                            nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4999 );
+                            nn.UDPSend(UCsendingSocket, nodeMessage, receivedAr[0], 4999);
                         }
-                    }
-                    else if(receivedAr[0].equals("p")) //its a previous node message
+                    } else if (receivedAr[0].equals("p")) //its a previous node message
                     {
                         previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
-                    }
-                    else if(receivedAr[0].equals("n")) //its a next node message
+                    } else if (receivedAr[0].equals("n")) //its a next node message
                     {
                         nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                     }
                 }
+                stub.printMap();
                 nn.shutdown(UCsendingSocket, stub, thisNodeID, nextNodeID, previousNodeID);
+                break;
             }
             /*MCSocket.close(); put this somewhere
             UCsendingSocket.close();*/
@@ -177,6 +177,6 @@ public class NamingNode
         {
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();
-        }
+        } 
     }
 }
