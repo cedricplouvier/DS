@@ -1,3 +1,5 @@
+import sun.reflect.generics.tree.Tree;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.*;
@@ -20,10 +22,13 @@ public class NamingServer implements NamingInterface {
     private static final String MULTICAST_IP = "225.4.5.6";
     private static final String MULTICAST_INTERFACE = "eth0";
 
-    public NamingServer() {}
+    public NamingServer()
+    {
+    }
 
     //add node to IPmap, recalculate the file distribution and write the IPmap to an XML file
-    public void addNode(String hostname, String IP) throws IOException, XMLStreamException {
+    public void addNode(String hostname, String IP) throws IOException, XMLStreamException
+    {
         Integer nodeID = Math.abs(hostname.hashCode()) % 32768;
         if (!IPmap.containsKey(nodeID)) {
             IPmap.put(nodeID, IP);
@@ -41,24 +46,9 @@ public class NamingServer implements NamingInterface {
         return Integer.toString(previousNode) + Integer.toString(nextNode); //return both
     }
 
-    public void printMap(){
-        for (Entry<Integer, String> entry : IPmap.entrySet()) {
-            Integer key = entry.getKey();
-            String value = entry.getValue();
-
-            System.out.printf("%d : %s\n", key, value);
-        }
-    }
-
     //remove node from IPmap, recalculate the file distribution and write the IPmap to an XML file
-    public void removeNode(Integer nodeID) throws IOException, XMLStreamException {
-        //System.out.println(IPmap.get(8784));
-        for (Entry<Integer, String> entry : IPmap.entrySet()) {
-            Integer key = entry.getKey();
-            String value = entry.getValue();
-
-            System.out.printf("%d : %s\n", key, value);
-        }
+    public void removeNode(Integer nodeID) throws IOException, XMLStreamException
+    {
         if (IPmap.containsKey(nodeID)) {
             System.out.println("a");
             IPmap.remove(nodeID);
@@ -171,20 +161,9 @@ public class NamingServer implements NamingInterface {
             MCpacket = new DatagramPacket(MCbuf, MCbuf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
             System.out.println("Joined MC");
             while (true) {
-                //wait for multicast from new nodes in the network
-                MCreceivingSocket.receive(MCpacket);
-                received = new String(MCpacket.getData(), 0, MCpacket.getLength());
-                receivedAr = received.split(" ");
-                ns.addNode(receivedAr[2], receivedAr[1]); //add node with hostname and IP sent with UDP multicast
-                ns.printMap();
-                String mapSize = Integer.toString(ns.IPmap.size());
-                UCbuf= mapSize.getBytes();
-                UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 5000); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
-                UCsendingSocket.send(UCpacket);
-                ns.printMap();
-
-
-                ns.printMap();
+                UCpacket = new DatagramPacket(UCbuf, UCbuf.length);
+                UCsendingSocket.receive(UCpacket);
+                new Thread(new MulticastResponder(UCsendingSocket, ns)).start();
             }
         } catch (Exception e) {
             System.err.println("Server exception: " + e.toString());
