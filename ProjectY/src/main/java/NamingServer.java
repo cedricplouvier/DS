@@ -34,7 +34,7 @@ public class NamingServer implements NamingInterface {
     }
 
     //returns previous and next node of failed node
-    public String failure(int failedNode)
+    public String failure(Integer failedNode)
     {
         Integer previousNode = IPmap.lowerKey(failedNode); //find the previous and next node of the failed node
         Integer nextNode = IPmap.higherKey(failedNode);

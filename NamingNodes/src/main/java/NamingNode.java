@@ -65,24 +65,17 @@ public class NamingNode
     //Failure protocol
     public void failure(Integer failedNode, NamingInterface stub) throws IOException, XMLStreamException
     {
-        DatagramSocket socket = new DatagramSocket();
-        String failureMessage = "f " + failedNode;
-        byte buf[] = failureMessage.getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, InetAddress.getByName("192.168.0.4"),4445);
-        socket.send(packet); //send failure message to nameserver
-        packet = new DatagramPacket(buf, buf.length);
-        socket.receive(packet); //the server will reply with the next and previous node of the failed one
-        String received = new String(packet.getData(), 0, packet.getLength());
-        String receivedAr[] = received.split(" ");
+        DatagramSocket UCsocket = new DatagramSocket(4445);
+        String receivedAr[] = stub.failure(failedNode).split(" ");
         //give previous node of the failed one, his new next node
         Integer previousNode = Integer.valueOf(receivedAr[0]);
         Integer nextNode = Integer.valueOf(receivedAr[1]);
         String nodeMessage = "n " + nextNode;
-        UDPSend(socket, nodeMessage, stub.getIP(previousNode), 4445);
+        UDPSend(UCsocket, nodeMessage, stub.getIP(previousNode), 4445);
         //give next node of the failed one, his new previous node
         nodeMessage = "p " + previousNode;
-        UDPSend(socket, nodeMessage, stub.getIP(nextNode), 4445);
-        socket.close();
+        UDPSend(UCsocket, nodeMessage, stub.getIP(nextNode), 4445);
+        UCsocket.close();
     }
 
     public static void main(String[] args) throws IOException
@@ -111,12 +104,13 @@ public class NamingNode
 
             //Bootstrap + Discovery
             ipString = nn.getThisIP().getHostAddress(); // InetAddress to string
-            hostname = "Node " + ipString.substring(10); //hostname dependant on last digit of IP
+            hostname = "Node" + ipString.substring(10); //hostname dependant on last digit of IP
             thisNodeID = nn.calculateHash(hostname);
 
             //Multicast send IP + hostname to all
             MulticastSocket MCSocket = new MulticastSocket(MULTICAST_PORT);
             DatagramSocket UCsendingSocket = new DatagramSocket();
+            DatagramSocket UCreceivingSocket = new DatagramSocket(5000);
 
             nameIP = "b " + ipString + " " + hostname; //bootstrap message
             nn.UDPSend(MCSocket, nameIP, MULTICAST_IP, MULTICAST_PORT);
@@ -125,16 +119,15 @@ public class NamingNode
             MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
             while(true)
             {
-                MCSocket.receive(receivingPack);
+                UCreceivingSocket.receive(receivingPack);
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
-                if(receivingPack.getAddress().toString().equals("192.168.0.4")) //if from server IP
+                if(receivingPack.getAddress().toString().equals("/192.168.0.4")) //if from server IP
                 {
                     amountOfNodes = Integer.parseInt(received);
-                    if(amountOfNodes < 1)
+                    if(amountOfNodes <= 1)
                     {
                         nextNodeID = thisNodeID;
                         previousNodeID = thisNodeID;
-                        System.out.println(nextNodeID +" " + previousNodeID);
                     }
                     else
                     {
@@ -170,6 +163,7 @@ public class NamingNode
                     }
                 }
                 nn.shutdown(UCsendingSocket, stub, thisNodeID, nextNodeID, previousNodeID);
+                break;
             }
             /*MCSocket.close(); put this somewhere
             UCsendingSocket.close();*/
