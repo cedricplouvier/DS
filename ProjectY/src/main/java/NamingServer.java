@@ -15,13 +15,60 @@ import javax.xml.stream.*;
 
 public class NamingServer implements NamingInterface {
 
+    /*
+        private int balance = 0;
+    private String logins [] = {"Max","Cedric","Roald","Ruben"};
+    private String passwords [] = {"pswd1","pswd2","pswd3","pswd4"};
+    private int balances [] = {0,0,0,0};
+    private boolean online [] = {false,false,false,false};
+
+     */
+
     public TreeMap<Integer, String> IPmap = new TreeMap<>();
     public TreeMap<Integer, Integer> fileOwnerMap = new TreeMap<>();
     String[] fileArray = {"Taak1.docx", "Song.mp3", "Uitgaven.xls", "loon.pdf", "readme.txt", "download.rar"};
 
 
+
     public NamingServer() {
     }
+
+    /*
+    public int login(String login,String password){ //check credentials and if online
+        int user = -1;
+        for(int i  = 0;i < logins.length; i++){
+            if(logins[i].equals(login) && passwords[i].equals(password) && online[i] == false)
+            {
+                user = i;
+                online[i] = true;
+            }
+            else if(logins[i].equals(login) && passwords[i].equals(password) && online[i] == true) {
+                user = -2;
+            }
+        }
+        return user;
+    }
+
+    public void logout(int user) { //now other clients can login to the account again
+        online[user] = false;
+    }
+
+    public void addMoney(int money,int user) {
+        balances[user] += money;
+    }
+
+    public int withdraw(int money,int user) {
+        if((balances[user]-money) < 0) return 0;
+        else {
+            balances[user] -= money;
+            return 1;
+        }
+    }
+
+    public int getBalance(int user) {
+        return balances[user];
+    }
+     */
 
     public String sayHello() {
         return "connection made!";
