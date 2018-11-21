@@ -3,14 +3,17 @@ import java.net.*;
 
 public class FileDownloadHandler implements Runnable
 {
-    public FileDownloadHandler() {}
+    private String filename;
+
+    public FileDownloadHandler(String filename)
+    {
+        this.filename = filename;
+    }
 
     public void run()
     {
         int bytesRead;
         int current = 0;
-        String filename;
-        String directory = "/home....";
         String fullPath;
         FileOutputStream fos = null;
         BufferedOutputStream bos = null;
@@ -19,13 +22,7 @@ public class FileDownloadHandler implements Runnable
         DatagramSocket UDPSocket;
 
         try{
-            //First receive the filename via UDP
-            UDPSocket = new DatagramSocket(Constants.UDPFileName_PORT);
-            byte[] UDPbuf = new byte[1024];
-            DatagramPacket UDPpacket = new DatagramPacket(UDPbuf, UDPbuf.length);
-            UDPSocket.receive(UDPpacket);
-            filename = new String(UDPpacket.getData(), 0, UDPpacket.getLength());
-            fullPath = directory + filename;
+            fullPath = Constants.replicationFileDirectory + filename;
 
             //Now receive the file
             TCPSsocket = new ServerSocket(Constants.TCP_FILE_PORT);
