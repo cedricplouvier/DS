@@ -1,17 +1,18 @@
-import java.io.FileOutputStream;
+import sun.reflect.generics.tree.Tree;
+
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.rmi.Naming;
-import java.rmi.server.*;
-import java.util.ArrayList;
+import java.net.*;
+import java.rmi.RemoteException;
+import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.Map;
-import java.util.List;
+import java.util.Map.Entry;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.xml.stream.*;
+import java.nio.ByteBuffer;
 
 public class NamingServer implements NamingInterface {
 
@@ -28,101 +29,87 @@ public class NamingServer implements NamingInterface {
     public TreeMap<Integer, Integer> fileOwnerMap = new TreeMap<>();
     String[] fileArray = {"Taak1.docx", "Song.mp3", "Uitgaven.xls", "loon.pdf", "readme.txt", "download.rar"};
 
+    public static NamingServer ns = new NamingServer();
 
+    private static final int MULTICAST_PORT = 4321;
+    private static final String MULTICAST_IP = "225.4.5.6";
+    private static final String MULTICAST_INTERFACE = "eth0";
 
-    public NamingServer() {
-    }
-
-    /*
-    public int login(String login,String password){ //check credentials and if online
-        int user = -1;
-        for(int i  = 0;i < logins.length; i++){
-            if(logins[i].equals(login) && passwords[i].equals(password) && online[i] == false)
-            {
-                user = i;
-                online[i] = true;
-            }
-            else if(logins[i].equals(login) && passwords[i].equals(password) && online[i] == true) {
-                user = -2;
-            }
-        }
-        return user;
-    }
-
-    public void logout(int user) { //now other clients can login to the account again
-        online[user] = false;
-    }
-
-    public void addMoney(int money,int user) {
-        balances[user] += money;
-    }
-
-    public int withdraw(int money,int user) {
-        if((balances[user]-money) < 0) return 0;
-        else {
-            balances[user] -= money;
-            return 1;
-        }
-    }
-
-    public int getBalance(int user) {
-        return balances[user];
-    }
-     */
+    public NamingServer() {}
 
     public String sayHello() {
         return "connection made!";
     }
 
-
-    public void addNode(String hostname, String IP) throws IOException, XMLStreamException {
-
+    //add node to IPmap, recalculate the file distribution and write the IPmap to an XML file
+    public void addNode(String hostname, String IP) throws IOException, XMLStreamException
+    {
         Integer nodeID = Math.abs(hostname.hashCode()) % 32768;
 
         if (!IPmap.containsKey(nodeID)) {
             IPmap.put(nodeID, IP);
             System.out.println(hostname +  " and ip " + IP);
             recalculate();
-            //writeToXML(); watch out, in filewriter must stand the right directory!!
+            writeToXML();
+            for (Map.Entry<Integer, String> entry : IPmap.entrySet()) {
+                System.out.println("Key: " + entry.getKey() + ". Value: " + entry.getValue());
+            }
         } else System.out.println("Node already in use.");
     }
 
-    public void removeNode(String hostname) throws IOException, XMLStreamException {
-        int nodeID = Math.abs(hostname.hashCode()) % 32768;
-        if (IPmap.containsKey(nodeID)) {
-            IPmap.remove(nodeID);
-            fileOwnerMap.remove(nodeID);
-            recalculate();
-            writeToXML();
+    //returns previous and next node of failed node
+    public String failure(Integer failedNode)
+    {
+        Integer previousNode = IPmap.lowerKey(failedNode); //find the previous and next node of the failed node
+        Integer nextNode = IPmap.higherKey(failedNode);
+        return Integer.toString(previousNode) + Integer.toString(nextNode); //return both
+    }
+
+    //remove node from IPmap, recalculate the file distribution and write the IPmap to an XML file
+    public void removeNode(Integer nodeID) throws IOException, XMLStreamException
+    {
+        if (ns.IPmap.containsKey(nodeID)) {
+
+            ns.IPmap.remove(nodeID);
+            ns.fileOwnerMap.remove(nodeID);
+            if (ns.IPmap.size() > 1)
+            {
+                recalculate();
+                writeToXML();
+            }
+            System.out.printf("Node removed");
         } else System.out.println("Node not in system.");
     }
-
-    public String fileLocator(String filename) //what node calls, via RMI, to know IP of certain file
+    //what node calls, via RMI, to know the IP of the node a file is located on
+    public String fileLocator(String filename)
     {
         int fileHash = Math.abs(filename.hashCode()) % 32768;
-        Integer closestKey = IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
+        Integer closestKey = ns.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
         if (closestKey == null) {
-            closestKey = IPmap.lastKey(); //returns highest key in this map
+            closestKey = ns.IPmap.lastKey(); //returns highest key in this map
         }
-        return IPmap.get(closestKey); //returns IP associated with this nodeID
+        return ns.IPmap.get(closestKey); //returns IP associated with this nodeID
     }
 
+    //distributes the files over all nodes, evenly
     public int filePlacer(String filename) {
         int fileHash = Math.abs(filename.hashCode()) % 32768;
-        Integer closestKey = IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
+        Integer closestKey = ns.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
         if (closestKey == null) {
-            closestKey = IPmap.lastKey(); //returns highest key in this map
+            closestKey = ns.IPmap.lastKey(); //returns highest key in this map
         }
         return closestKey; //return ID of node where file needs to be stored.
     }
 
-    public void recalculate() //assigns files to the different nodes
+    //assigns files to the different nodes
+    public void recalculate()
     {
         for (int i = 0; i < fileArray.length; i++) {
-            fileOwnerMap.put((Math.abs(fileArray[i].hashCode()) % 32768), filePlacer(fileArray[i]));
+            ns.fileOwnerMap.put((Math.abs(fileArray[i].hashCode()) % 32768), filePlacer(fileArray[i]));
         }
     }
 
+    //Write the IPmap to and XML file
     public void writeToXML() throws IOException, XMLStreamException {
         FileOutputStream outPC = new FileOutputStream("C:\\Users\\Ruben Joosen\\Documents\\AntwerpenU\\Semester 5\\Distributed Systems\\ProjectY\\DS\\ProjectY\\map.xml");
         FileOutputStream out = new FileOutputStream("/home/pi/Documents/RMISERVER/map.xml");
@@ -136,7 +123,7 @@ public class NamingServer implements NamingInterface {
                 xsw.writeStartElement("entries");
 
                 // Do the Collection
-                for (Map.Entry<Integer, String> e : IPmap.entrySet()) {
+                for (Map.Entry<Integer, String> e : ns.IPmap.entrySet()) {
                     xsw.writeStartElement("entry");
                     xsw.writeAttribute("key", e.getKey().toString());
                     xsw.writeAttribute("value", e.getValue().toString());
@@ -160,38 +147,60 @@ public class NamingServer implements NamingInterface {
         }
     }
 
+    //get the IP of a node in the system
+    public String getIP(Integer nodeID) throws RemoteException
+    {
+        return ns.IPmap.get(nodeID);
+    }
+
     public static void main(String args[]) throws IOException {
-            /*TCP
-            servsock = new ServerSocket(6789);
-            ClientWorker w;
-            try
-            {
-                w = new ClientWorker(servsock.accept());
-                Thread t = new Thread(w);
-                t.start();
-                System.out.println("Accepted connection : " + servsock);
-            } catch(IOException e)
-            {
-                System.out.println("Accept failed");
-                System.exit(-1);
-            }*/
+        byte MCbuf[] = new byte[1024];
+        byte UCbuf[] = new byte[1024];
+        DatagramPacket MCpacket;
+        DatagramPacket UCpacket;
+        String received;
+        String[] receivedAr;
+        boolean running = true;
+        MulticastSocket MCreceivingSocket = null;
+        DatagramSocket UCreceivingSocket = null;
+        DatagramSocket UCsendingSocket = null;
 
+        try {
             //RMI
-            try {
-                NamingServer obj = new NamingServer();
-                NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(obj, 0);
+            NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(ns, 0);
 
-                // Bind the remote object's stub in the registry
-                //Registry registry = LocateRegistry.getRegistry();
-                Registry registry = LocateRegistry.createRegistry(1099);
-                registry.bind("NamingInterface", stub);
-                System.out.println(registry); //print the right IP to connect to in Client
+            // Bind the remote object's stub in the registry
+            //Registry registry = LocateRegistry.getRegistry();
+            Registry registry = LocateRegistry.createRegistry(1099);
+            registry.bind("NamingInterface", stub);
+            System.out.println(registry); //print the right IP to connect to in Client
 
-                System.err.println("Server ready");
-            } catch (Exception e) {
-                System.err.println("Server exception: " + e.toString());
-                e.printStackTrace();
+            System.err.println("Server ready");
+
+            //create Multicast and unicast sockets
+            MCreceivingSocket = new MulticastSocket(MULTICAST_PORT);
+            UCreceivingSocket = new DatagramSocket(4448);
+            UCsendingSocket = new DatagramSocket();
+            //join the multicast group
+            MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
+            MCpacket = new DatagramPacket(MCbuf, MCbuf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
+            System.out.println("Joined MC");
+            while (running) {
+                MCpacket = new DatagramPacket(UCbuf, UCbuf.length);
+                MCreceivingSocket.receive(MCpacket);
+                received = new String(MCpacket.getData(), 0, MCpacket.getLength());
+                receivedAr = received.split(" ");
+                ns.addNode(receivedAr[2], receivedAr[1]); //add node with hostname and IP sent with UDP multicast
+                String mapSize = Integer.toString(ns.IPmap.size());
+                UCbuf = mapSize.getBytes();
+                UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 4446); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
+                UCsendingSocket.send(UCpacket);
             }
-
+        } catch (Exception e) {
+            System.err.println("Server exception: " + e.toString());
+            e.printStackTrace();
+            MCreceivingSocket.close();
+            UCreceivingSocket.close();
+            UCsendingSocket.close();
         }
 }

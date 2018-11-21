@@ -1,3 +1,4 @@
+import javax.xml.stream.XMLStreamException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.io.*;
@@ -9,118 +10,20 @@ import java.rmi.server.*;
 
 public class NamingNode
 {
+    private static final int MULTICAST_PORT = 4321;
+    private static final String MULTICAST_IP = "225.4.5.6";
+    private static final String MULTICAST_INTERFACE = "eth0";
 
     public NamingNode() {}
 
-    public void downloadFile(String filename) throws IOException
+    public Integer calculateHash(String hostname)
     {
-        Socket csock = null;
-        byte [] mybytearray  = new byte [6022386];
-        int bytesRead;
-        int current = 0;
-        FileOutputStream fos = null;
-        BufferedOutputStream bos = null;
-
-        try
-        {
-            csock = new Socket("localhost",6789); //server IP and port
-            InputStream is = csock.getInputStream();
-            fos = new FileOutputStream(filename); //where file is placed
-            bos = new BufferedOutputStream(fos);
-            bytesRead = is.read(mybytearray,0,mybytearray.length);
-            current = bytesRead;
-            do {
-                bytesRead =
-                        is.read(mybytearray, current, (mybytearray.length-current));
-                if(bytesRead >= 0) current += bytesRead;
-            } while(bytesRead > -1);
-
-            bos.write(mybytearray, 0 , current);
-            bos.flush();
-        }
-        finally
-        {
-            if (fos != null) fos.close();
-            if (bos != null) bos.close();
-            if (csock != null) csock.close();
-        }
+        return Math.abs(hostname.hashCode()) % 32768;
     }
 
-    public static void main(String[] args)
+    //get the IP from this node
+    public InetAddress getThisIP()
     {
-        /*
-        String host = (args.length < 1) ? null : args[0];
-        try {
-            boolean loginRunning = true;
-            boolean running = true;
-            int user = 0;
-            Registry registry = LocateRegistry.getRegistry( "localhost",1099); //169.254.56.139
-            BankInterface stub = (BankInterface) registry.lookup("BankInterface");
-
-            System.out.println("Enter login and password separated by space or type 'logout' to quit: \n");
-            Scanner scan = new Scanner(System.in);
-
-            while(loginRunning){
-                String[] userInput = new String[2];
-                userInput = scan.nextLine().split(" ");
-                if(userInput[0].equals("logout")) break;
-                user = stub.login(userInput[0],userInput[1]);
-                if(user != -2) { //if user not already logged in
-                    if(user > -1){ //and the credentials are right
-                        System.out.println("Enter action: Withdraw/Deposit/Balance, then the amount: \n");
-                        while(running)
-                        {
-                            int amount = 0;
-                            userInput = scan.nextLine().split(" ");
-                            if(userInput[0].equals("Quit")){
-                                running = false;
-                                loginRunning = false;
-                            }
-                            if(userInput.length > 1){ //check if userInput[1] exists
-                                if(userInput[1].matches("[0-9]+")) //[0-9] means check for these digits, the + means one or more
-                                {
-                                    switch(userInput[0])
-                                    {
-                                        case "Withdraw":
-                                            amount = Integer.valueOf(userInput[1]);
-                                            if(stub.withdraw(amount,user) == 0)System.out.println("Insufficient funds!");
-                                            else System.out.println("Success!");
-                                            break;
-                                        case "Deposit":
-                                            amount = Integer.valueOf(userInput[1]);
-                                            stub.addMoney(amount,user);
-                                            System.out.println("Success!");
-                                            break;
-                                        case "Balance":
-                                            System.out.println(stub.getBalance(user));
-                                            break;
-                                        default:
-                                            System.out.println("Unknown command, try again:");
-                                    }
-                                }
-                                else System.out.println("Unknown command, try again:");;
-                            }
-                            else System.out.println("Unknown command, try again:");
-                        }
-                    }
-                    else {
-                        System.out.println("Login failed, try again: ");
-                    }
-                }
-                else System.out.println("Already logged in");
-            }
-            stub.logout(user);
-        } catch (Exception e) {
-            System.err.println("Client exception: " + e.toString());
-            e.printStackTrace();
-        }
-        */
-
-        //IP
-        String hostname;
-        String ipString;
-        InetAddress ip = null;
-
         try {
 
             //RMI connection
@@ -134,22 +37,142 @@ public class NamingNode
             while (e.hasMoreElements()) {
                 NetworkInterface n = (NetworkInterface) e.nextElement();
                 Enumeration ee = n.getInetAddresses();
-                while (ee.hasMoreElements()) {  //while lus doorheen alle
+                while (ee.hasMoreElements()) {  //while through all IPs until we find the matching IP
                     InetAddress i = (InetAddress) ee.nextElement();
-
-                    if (i.getHostAddress().contains("192.168.1.")){ //watch out for right IP range in pi : (192.168.0.)
-
-                        ip = i;
-                        System.out.println(ip.getHostAddress());
-
+                    if (i.getHostAddress().contains("192.168.0")) {
+                        return i;
                     }
                 }
             }
-            ipString = ip.getHostAddress(); //ip in Stringformat
-            hostname = "Node " + ipString.substring(11); //declare hostname with last digit of IP
+        }catch(Exception e) {}
+        return null;
+    }
 
-            if (ip != null) {
-                stub.addNode(hostname, ipString); //RMI get added to the MAP
+    //Shutdown protocol
+    public void shutdown(DatagramSocket sendingSocket, NamingInterface stub, Integer thisNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
+    {
+        String nextIP = stub.getIP(nextNodeID);
+        String previousIP = stub.getIP(previousNodeID);
+        //send nextNodeID to your previous node
+        String sendingStr = "n " + nextNodeID;
+        UDPSend(sendingSocket, sendingStr, previousIP, 4446);
+        //send previousNodeID to your next node
+        sendingStr = "p " + previousNodeID;
+        UDPSend(sendingSocket, sendingStr, nextIP, 4446);
+
+        stub.removeNode(thisNodeID); //remove node from IPMap on the server
+    }
+
+    //sending packets with UDP, unicast/multicast
+    public void UDPSend(DatagramSocket sendingSocket, String message, String ip, int port) throws IOException
+    {
+        byte buf[] = message.getBytes();
+        DatagramPacket pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(ip),port);
+        sendingSocket.send(pack);
+    }
+
+    //Failure protocol
+    public void failure(Integer failedNode, NamingInterface stub) throws IOException, XMLStreamException
+    {
+        DatagramSocket UCsocket = new DatagramSocket(4445);
+        String receivedAr[] = stub.failure(failedNode).split(" ");
+        //give previous node of the failed one, his new next node
+        Integer previousNode = Integer.valueOf(receivedAr[0]);
+        Integer nextNode = Integer.valueOf(receivedAr[1]);
+        String nodeMessage = "n " + nextNode;
+        UDPSend(UCsocket, nodeMessage, stub.getIP(previousNode), 4445);
+        //give next node of the failed one, his new previous node
+        nodeMessage = "p " + previousNode;
+        UDPSend(UCsocket, nodeMessage, stub.getIP(nextNode), 4445);
+        UCsocket.close();
+    }
+
+    public static void main(String[] args) throws IOException
+    {
+        NamingNode nn = new NamingNode();
+        //IP
+        String hostname;
+        String ipString;
+        //Multicast
+        String received;
+        String[] receivedAr;
+        Integer newNodeID;
+        Integer thisNodeID;
+        Integer nextNodeID = 33000;
+        Integer previousNodeID = 0;
+        int amountOfNodes;
+        byte buf[] = new byte[1024];
+        DatagramPacket receivingPack = new DatagramPacket(buf, buf.length, InetAddress.getByName(MULTICAST_IP),MULTICAST_PORT);;
+        String nameIP;
+        String nodeMessage = null;
+
+        try {
+            //RMI
+            Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
+            NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
+
+            //Bootstrap + Discovery
+            ipString = nn.getThisIP().getHostAddress(); // InetAddress to string
+            hostname = "Node" + ipString.substring(10); //hostname dependant on last digit of IP
+            thisNodeID = nn.calculateHash(hostname);
+
+            //Multicast send IP + hostname to all
+            MulticastSocket MCSocket = new MulticastSocket(MULTICAST_PORT);
+            DatagramSocket UCsendingSocket = new DatagramSocket();
+            DatagramSocket UCreceivingSocket = new DatagramSocket(4446);
+
+            nameIP = "b " + ipString + " " + hostname; //bootstrap message
+            nn.UDPSend(MCSocket, nameIP, MULTICAST_IP, MULTICAST_PORT);
+
+            //Multicast receive IP + hostname from other nodes
+            MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
+            while(true)
+            {
+                UCreceivingSocket.receive(receivingPack);
+                received = new String(receivingPack.getData(), 0, receivingPack.getLength());
+                if(receivingPack.getAddress().toString().equals("/192.168.0.4")) //if from server IP
+                {
+                    amountOfNodes = Integer.parseInt(received);
+                    if(amountOfNodes <= 1)
+                    {
+                        nextNodeID = thisNodeID;
+                        previousNodeID = thisNodeID;
+                    }
+                    else
+                    {
+                        System.out.println("Error: amount of nodes smaller than 0!");
+                    }
+                }
+                else //if from any other IP => node
+                {
+                    receivedAr = received.split(" ");
+                    if(receivedAr[0].equals("b")) //b for bootstrap message
+                    {
+                        newNodeID = nn.calculateHash(receivedAr[1]);
+                        if((thisNodeID < newNodeID) && (newNodeID < nextNodeID)) //This is the previous node
+                        {
+                            nextNodeID = newNodeID;
+                            nodeMessage = "p " + thisNodeID; //p for previous nodeID message
+                            nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4999 );
+                        }
+                        else if((previousNodeID < newNodeID) && (newNodeID < thisNodeID)) //This is the next node
+                        {
+                            previousNodeID = newNodeID;
+                            nodeMessage = "n " + thisNodeID;
+                            nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4999 );
+                        }
+                    }
+                    else if(receivedAr[0].equals("p")) //its a previous node message
+                    {
+                        previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
+                    }
+                    else if(receivedAr[0].equals("n")) //its a next node message
+                    {
+                        nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
+                    }
+                }
+                //nn.shutdown(UCsendingSocket, stub, thisNodeID, nextNodeID, previousNodeID); //works
+                //break;
             }
 
 
