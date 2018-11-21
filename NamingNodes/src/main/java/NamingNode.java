@@ -54,6 +54,8 @@ public class NamingNode
     //Shutdown protocol
     public void shutdown(DatagramSocket sendingSocket, NamingInterface stub, Integer thisNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
     {
+        File[] listOfFiles = Constants.replicationFileDirectory.listFiles();
+        Thread FileUplHThr;
         String nextIP = stub.getIP(nextNodeID);
         String previousIP = stub.getIP(previousNodeID);
         //send nextNodeID to your previous node
@@ -63,6 +65,16 @@ public class NamingNode
         sendingStr = "p " + previousNodeID;
         UDPSend(sendingSocket, sendingStr, nextIP, 4446);
 
+        //send all files from replicationDir to the previous node and delete them, locally, when done
+        for (int i = 0; i < listOfFiles.length; i++)
+        {
+            if (listOfFiles[i].isFile())
+            {
+                FileUploadHandler FUH = new FileUploadHandler(listOfFiles[i].getName(), previousIP, true);
+                FileUplHThr = new Thread(FUH);
+                FileUplHThr.start();
+            }
+        }
         stub.removeNode(thisNodeID); //remove node from IPMap on the server
     }
 
