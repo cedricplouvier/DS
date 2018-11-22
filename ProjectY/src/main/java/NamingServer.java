@@ -1,5 +1,6 @@
 import sun.reflect.generics.tree.Tree;
 
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.*;
@@ -34,21 +35,23 @@ public class NamingServer implements NamingInterface {
     private static final int MULTICAST_PORT = 4321;
     private static final String MULTICAST_IP = "225.4.5.6";
     private static final String MULTICAST_INTERFACE = "eth0";
+    private static final String ServerIP = "192.168.0.4";
 
-    public NamingServer() {}
+
+    public NamingServer() {
+    }
 
     public String sayHello() {
         return "connection made!";
     }
 
     //add node to IPmap, recalculate the file distribution and write the IPmap to an XML file
-    public void addNode(String hostname, String IP) throws IOException, XMLStreamException
-    {
+    public void addNode(String hostname, String IP) throws IOException, XMLStreamException {
         Integer nodeID = Math.abs(hostname.hashCode()) % 32768;
 
         if (!IPmap.containsKey(nodeID)) {
             IPmap.put(nodeID, IP);
-            System.out.println(hostname +  " and ip " + IP);
+            System.out.println(hostname + " and ip " + IP);
             recalculate();
             writeToXML();
             for (Map.Entry<Integer, String> entry : IPmap.entrySet()) {
@@ -58,31 +61,28 @@ public class NamingServer implements NamingInterface {
     }
 
     //returns previous and next node of failed node
-    public String failure(Integer failedNode)
-    {
+    public String failure(Integer failedNode) {
         Integer previousNode = IPmap.lowerKey(failedNode); //find the previous and next node of the failed node
         Integer nextNode = IPmap.higherKey(failedNode);
         return Integer.toString(previousNode) + Integer.toString(nextNode); //return both
     }
 
     //remove node from IPmap, recalculate the file distribution and write the IPmap to an XML file
-    public void removeNode(Integer nodeID) throws IOException, XMLStreamException
-    {
+    public void removeNode(Integer nodeID) throws IOException, XMLStreamException {
         if (ns.IPmap.containsKey(nodeID)) {
 
             ns.IPmap.remove(nodeID);
             ns.fileOwnerMap.remove(nodeID);
-            if (ns.IPmap.size() > 1)
-            {
+            if (ns.IPmap.size() > 1) {
                 recalculate();
                 writeToXML();
             }
             System.out.printf("Node removed");
         } else System.out.println("Node not in system.");
     }
+
     //what node calls, via RMI, to know the IP of the node a file is located on
-    public String fileLocator(String filename)
-    {
+    public String fileLocator(String filename) {
         int fileHash = Math.abs(filename.hashCode()) % 32768;
         Integer closestKey = ns.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
         if (closestKey == null) {
@@ -102,8 +102,7 @@ public class NamingServer implements NamingInterface {
     }
 
     //assigns files to the different nodes
-    public void recalculate()
-    {
+    public void recalculate() {
         for (int i = 0; i < fileArray.length; i++) {
             ns.fileOwnerMap.put((Math.abs(fileArray[i].hashCode()) % 32768), filePlacer(fileArray[i]));
         }
@@ -112,13 +111,13 @@ public class NamingServer implements NamingInterface {
     //Write the IPmap to and XML file
     public void writeToXML() throws IOException, XMLStreamException {
         FileOutputStream outPC = new FileOutputStream("C:\\Users\\Ruben Joosen\\Documents\\AntwerpenU\\Semester 5\\Distributed Systems\\ProjectY\\DS\\ProjectY\\map.xml");
-        FileOutputStream out = new FileOutputStream("/home/pi/Documents/RMISERVER/map.xml");
+        FileOutputStream out = new FileOutputStream("/home/pi/Documents/DS/ProjectY/map.xml"); // "/home/pi/Documents/DS/ProjectY/map.xml"
 
         XMLStreamWriter xsw = null;
         try {
             try {
                 XMLOutputFactory xof = XMLOutputFactory.newInstance();
-                xsw = xof.createXMLStreamWriter(out,"UTF-8");
+                xsw = xof.createXMLStreamWriter(out, "UTF-8");
                 xsw.writeStartDocument("utf-8", "1.0");
                 xsw.writeStartElement("entries");
 
@@ -148,8 +147,7 @@ public class NamingServer implements NamingInterface {
     }
 
     //get the IP of a node in the system
-    public String getIP(Integer nodeID) throws RemoteException
-    {
+    public String getIP(Integer nodeID) throws RemoteException {
         return ns.IPmap.get(nodeID);
     }
 
@@ -178,10 +176,17 @@ public class NamingServer implements NamingInterface {
             System.err.println("Server ready");
 
             //create Multicast and unicast sockets
+
             MCreceivingSocket = new MulticastSocket(MULTICAST_PORT);
+            MCreceivingSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName(ServerIP)));
             UCreceivingSocket = new DatagramSocket(4448);
             UCsendingSocket = new DatagramSocket();
+
             //join the multicast group
+
+
+
+
             MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
             MCpacket = new DatagramPacket(MCbuf, MCbuf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
             System.out.println("Joined MC");
@@ -203,4 +208,5 @@ public class NamingServer implements NamingInterface {
             UCreceivingSocket.close();
             UCsendingSocket.close();
         }
+    }
 }

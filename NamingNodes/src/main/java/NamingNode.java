@@ -13,6 +13,7 @@ public class NamingNode
     private static final int MULTICAST_PORT = 4321;
     private static final String MULTICAST_IP = "225.4.5.6";
     private static final String MULTICAST_INTERFACE = "eth0";
+    private static final String ServerIP = "192.168.0.4";
 
     public NamingNode() {}
 
@@ -27,7 +28,7 @@ public class NamingNode
         try {
 
             //RMI connection
-            Registry registry = LocateRegistry.getRegistry("192.168.23.1"); //connect to right interface of namingserver (normally 192.168.0.4)
+            Registry registry = LocateRegistry.getRegistry(ServerIP); //connect to right interface of namingserver (normally 192.168.0.4)
             NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
             String response = stub.sayHello();
             System.out.println(response);
@@ -39,7 +40,7 @@ public class NamingNode
                 Enumeration ee = n.getInetAddresses();
                 while (ee.hasMoreElements()) {  //while through all IPs until we find the matching IP
                     InetAddress i = (InetAddress) ee.nextElement();
-                    if (i.getHostAddress().contains("192.168.0")) {
+                    if (i.getHostAddress().contains("192.168.0.")) {
                         return i;
                     }
                 }
@@ -95,7 +96,7 @@ public class NamingNode
         String ipString;
         //Multicast
         String received;
-        String[] receivedAr;
+        String[] receivedAr = new String[10];
         Integer newNodeID;
         Integer thisNodeID;
         Integer nextNodeID = 33000;
@@ -108,11 +109,12 @@ public class NamingNode
 
         try {
             //RMI
-            Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
+            Registry registry = LocateRegistry.getRegistry(ServerIP, 1099); //server IP and port
             NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
 
             //Bootstrap + Discovery
             ipString = nn.getThisIP().getHostAddress(); // InetAddress to string
+            System.out.println(ipString);
             hostname = "Node" + ipString.substring(10); //hostname dependant on last digit of IP
             thisNodeID = nn.calculateHash(hostname);
 
@@ -133,6 +135,7 @@ public class NamingNode
                 if(receivingPack.getAddress().toString().equals("/192.168.0.4")) //if from server IP
                 {
                     amountOfNodes = Integer.parseInt(received);
+                    System.out.println(amountOfNodes);
                     if(amountOfNodes <= 1)
                     {
                         nextNodeID = thisNodeID;
@@ -146,6 +149,7 @@ public class NamingNode
                 else //if from any other IP => node
                 {
                     receivedAr = received.split(" ");
+                    System.out.println(receivedAr[0]);
                     if(receivedAr[0].equals("b")) //b for bootstrap message
                     {
                         newNodeID = nn.calculateHash(receivedAr[1]);
