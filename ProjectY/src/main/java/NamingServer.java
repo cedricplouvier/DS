@@ -53,7 +53,7 @@ public class NamingServer implements NamingInterface {
             IPmap.put(nodeID, IP);
             System.out.println(hostname + " and ip " + IP);
             recalculate();
-            writeToXML();
+            //writeToXML();
             for (Map.Entry<Integer, String> entry : IPmap.entrySet()) {
                 System.out.println("Key: " + entry.getKey() + ". Value: " + entry.getValue());
             }
