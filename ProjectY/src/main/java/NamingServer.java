@@ -80,7 +80,7 @@ public class NamingServer implements NamingInterface {
             ns.fileOwnerMap.remove(nodeID);
             if (ns.IPmap.size() > 1) {
                 recalculate();
-                writeToXML();
+                //writeToXML();
             }
             System.out.printf("Node removed");
         } else System.out.println("Node not in system.");

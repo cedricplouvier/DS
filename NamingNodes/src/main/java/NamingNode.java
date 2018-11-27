@@ -77,16 +77,16 @@ public class NamingNode
     //Failure protocol
     public void failure(Integer failedNode, final NamingInterface stub) throws IOException, XMLStreamException
     {
-        DatagramSocket UCsocket = new DatagramSocket(4445);
+        DatagramSocket UCsocket = new DatagramSocket(4446);
         String receivedAr[] = stub.failure(failedNode).split(" ");
         //give previous node of the failed one, his new next node
         Integer previousNode = Integer.valueOf(receivedAr[0]);
         Integer nextNode = Integer.valueOf(receivedAr[1]);
         String nodeMessage = "n " + nextNode;
-        UDPSend(UCsocket, nodeMessage, stub.getIP(previousNode), 4449);
+        UDPSend(UCsocket, nodeMessage, stub.getIP(previousNode), 4446);
         //give next node of the failed one, his new previous node
         nodeMessage = "p " + previousNode;
-        UDPSend(UCsocket, nodeMessage, stub.getIP(nextNode), 4449);
+        UDPSend(UCsocket, nodeMessage, stub.getIP(nextNode), 4446);
         UCsocket.close();
         final Thread pinger = new Thread(new Runnable() {
             @Override
@@ -197,13 +197,13 @@ public class NamingNode
                         {
                             nextNodeID = newNodeID;
                             nodeMessage = "p " + thisNodeID; //p for previous nodeID message
-                            nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4999 );
+                            nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4446 );
                         }
                         else if((previousNodeID < newNodeID) && (newNodeID < thisNodeID)) //This is the next node
                         {
                             previousNodeID = newNodeID;
                             nodeMessage = "n " + thisNodeID;
-                            nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4999 );
+                            nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4446 );
                         }
                     }
                     else if(receivedAr[0].equals("p")) //its a previous node message
