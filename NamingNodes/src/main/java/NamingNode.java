@@ -83,10 +83,10 @@ public class NamingNode
         Integer previousNode = Integer.valueOf(receivedAr[0]);
         Integer nextNode = Integer.valueOf(receivedAr[1]);
         String nodeMessage = "n " + nextNode;
-        UDPSend(UCsocket, nodeMessage, stub.getIP(previousNode), 4445);
+        UDPSend(UCsocket, nodeMessage, stub.getIP(previousNode), 4449);
         //give next node of the failed one, his new previous node
         nodeMessage = "p " + previousNode;
-        UDPSend(UCsocket, nodeMessage, stub.getIP(nextNode), 4445);
+        UDPSend(UCsocket, nodeMessage, stub.getIP(nextNode), 4449);
         UCsocket.close();
         final Thread pinger = new Thread(new Runnable() {
             @Override
@@ -144,7 +144,7 @@ public class NamingNode
             MulticastSocket MCSocket = new MulticastSocket(MULTICAST_PORT);
             DatagramSocket UCsendingSocket = new DatagramSocket();
             MCSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName(ipString)));
-            DatagramSocket UCreceivingSocket = new DatagramSocket(4446);
+            DatagramSocket UCreceivingSocket = new DatagramSocket(4449);
 
             //Multicast receive IP + hostname from other nodes
             MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)

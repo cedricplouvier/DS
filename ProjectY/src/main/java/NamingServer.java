@@ -194,6 +194,7 @@ public class NamingServer implements NamingInterface {
                 MCpacket = new DatagramPacket(UCbuf, UCbuf.length);
                 MCreceivingSocket.receive(MCpacket);
                 received = new String(MCpacket.getData(), 0, MCpacket.getLength());
+                System.out.println(received);
                 receivedAr = received.split(" ");
                 ns.addNode(receivedAr[2], receivedAr[1]); //add node with hostname and IP sent with UDP multicast
                 String mapSize = Integer.toString(ns.IPmap.size());
