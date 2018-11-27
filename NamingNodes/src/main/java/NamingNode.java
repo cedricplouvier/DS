@@ -171,6 +171,7 @@ public class NamingNode
                     {
                         nextNodeID = thisNodeID;
                         previousNodeID = thisNodeID;
+                        System.out.println("nextmode = " + nextNodeID + " , previousNode = " + previousNodeID);
                     }
                     else
                     {
@@ -200,11 +201,17 @@ public class NamingNode
                     else if(receivedAr[0].equals("p")) //its a previous node message
                     {
                         previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
+                        System.out.println("nextmode = " + nextNodeID + " , previousNode = " + previousNodeID);
+
                     }
                     else if(receivedAr[0].equals("n")) //its a next node message
                     {
                         nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
+                        System.out.println("nextmode = " + nextNodeID + " , previousNode = " + previousNodeID);
+
                     }
+
+
                 }
                 //nn.shutdown(UCsendingSocket, stub, thisNodeID, nextNodeID, previousNodeID); //works
                 //break;
