@@ -171,7 +171,7 @@ public class NamingNode
                     {
                         nextNodeID = thisNodeID;
                         previousNodeID = thisNodeID;
-                        System.out.println("nextmode = " + nextNodeID + " , previousNode = " + previousNodeID);
+                        System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                     }
                     else
                     {
