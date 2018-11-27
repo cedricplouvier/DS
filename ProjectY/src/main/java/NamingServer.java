@@ -20,14 +20,18 @@ public class NamingServer implements NamingInterface {
 
     private static final int MULTICAST_PORT = 4321;
     private static final String MULTICAST_IP = "225.4.5.6";
-    private static final String MULTICAST_INTERFACE = "eth0";
 
     public NamingServer() {}
+
+    public Integer returnHash(String name)
+    {
+        return Math.abs(name.hashCode()) % 32768;
+    }
 
     //add node to IPmap, recalculate the file distribution and write the IPmap to an XML file
     public void addNode(String hostname, String IP) throws IOException, XMLStreamException
     {
-        Integer nodeID = Math.abs(hostname.hashCode()) % 32768;
+        Integer nodeID = returnHash(hostname);
         if (!IPmap.containsKey(nodeID)) {
             IPmap.put(nodeID, IP);
             recalculate();
@@ -64,7 +68,7 @@ public class NamingServer implements NamingInterface {
     //what node calls, via RMI, to know the IP of the node a file is located on
     public Integer fileLocator(String filename)
     {
-        int fileHash = Math.abs(filename.hashCode()) % 32768;
+        int fileHash = returnHash(filename);
         Integer closestKey = ns.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
         if (closestKey == null) {
             closestKey = ns.IPmap.lastKey(); //returns highest key in this map
@@ -74,7 +78,7 @@ public class NamingServer implements NamingInterface {
 
     //distributes the files over all nodes, evenly
     public int filePlacer(String filename) {
-        int fileHash = Math.abs(filename.hashCode()) % 32768;
+        int fileHash = returnHash(filename);
         Integer closestKey = ns.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
         if (closestKey == null) {
             closestKey = ns.IPmap.lastKey(); //returns highest key in this map
@@ -86,7 +90,7 @@ public class NamingServer implements NamingInterface {
     public void recalculate()
     {
         for (int i = 0; i < fileArray.length; i++) {
-            ns.fileOwnerMap.put((Math.abs(fileArray[i].hashCode()) % 32768), filePlacer(fileArray[i]));
+            ns.fileOwnerMap.put(returnHash(fileArray[i]) , filePlacer(fileArray[i]));
         }
     }
 
@@ -140,6 +144,9 @@ public class NamingServer implements NamingInterface {
         String received;
         String[] receivedAr;
         boolean running = true;
+        Integer previous;
+        Integer next;
+        String bootstrapReturnMsg = null;
         MulticastSocket MCreceivingSocket = null;
         DatagramSocket UCreceivingSocket = null;
         DatagramSocket UCsendingSocket = null;
@@ -149,18 +156,17 @@ public class NamingServer implements NamingInterface {
             NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(ns, 0);
 
             // Bind the remote object's stub in the registry
-            //Registry registry = LocateRegistry.getRegistry();
             Registry registry = LocateRegistry.createRegistry(1099);
             registry.bind("NamingInterface", stub);
 
             //create Multicast and unicast sockets
             MCreceivingSocket = new MulticastSocket(MULTICAST_PORT);
+            MCreceivingSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName("192.168.0.4")));
             UCreceivingSocket = new DatagramSocket(4448);
             UCsendingSocket = new DatagramSocket();
 
             //join the multicast group
             MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
-            MCpacket = new DatagramPacket(MCbuf, MCbuf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
             System.out.println("Joined MC");
             while (running) {
                 MCpacket = new DatagramPacket(UCbuf, UCbuf.length);
@@ -168,8 +174,17 @@ public class NamingServer implements NamingInterface {
                 received = new String(MCpacket.getData(), 0, MCpacket.getLength());
                 receivedAr = received.split(" ");
                 ns.addNode(receivedAr[2], receivedAr[1]); //add node with hostname and IP sent with UDP multicast
-                String mapSize = Integer.toString(ns.IPmap.size());
-                UCbuf = mapSize.getBytes();
+                if(ns.IPmap.size() == 1)
+                {
+                    bootstrapReturnMsg  = Integer.toString(ns.IPmap.size());
+                }
+                else if(ns.IPmap.size() > 1)
+                {
+                    previous = ns.IPmap.lowerKey(ns.returnHash(receivedAr[2]));
+                    next = ns.IPmap.higherKey(ns.returnHash(receivedAr[2]));
+                    bootstrapReturnMsg = Integer.toString(ns.IPmap.size()) + Integer.toString(previous) + Integer.toString(next);
+                }
+                UCbuf = bootstrapReturnMsg.getBytes();
                 UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 4446); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
                 UCsendingSocket.send(UCpacket);
             }

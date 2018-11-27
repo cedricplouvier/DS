@@ -19,8 +19,10 @@ public class NamingNode
     private static NamingNode nn;
 
     private Integer thisNodeID;
-    private Integer nextNodeID;
+    public Integer nextNodeID;
     private Integer previousNodeID;
+
+    private static boolean fileReplicationRunning;
 
 
     private TreeMap<String,Integer> fileOwnerMap = new TreeMap<>(); //key is the filename, value is the nodeID it is stored on
@@ -125,13 +127,18 @@ public class NamingNode
             received = new String(receivingPack.getData(), 0, receivingPack.getLength());
             if (receivingPack.getAddress().toString().equals("/192.168.0.4")) //if from server IP
             {
-                amountOfNodes = Integer.parseInt(received);
-                if (amountOfNodes <= 1) {
+                receivedAr = received.split(" ");
+                amountOfNodes = Integer.parseInt(receivedAr[0]);
+                if (amountOfNodes == 1) {
                     nn.nextNodeID = nn.thisNodeID;
                     nn.previousNodeID = nn.thisNodeID;
+                    System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                 }
                 else if(amountOfNodes > 1) //if there are more than 1 node in the network, start
                 {
+                    fileReplicationRunning = true;
+                    previousNodeID = Integer.parseInt(receivedAr[1]);
+                    nextNodeID = Integer.parseInt(receivedAr[2]);
                     startUpThr = new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -164,11 +171,12 @@ public class NamingNode
 
                     case "p": //its a previous node message
                         nn.previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
+                        if(!fileReplicationRunning) fileReplicationRunning = true; //there are two nodes in network, so start replicating
                         break;
 
                     case "n": //its a next node message
                         nn.nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
-
+                        if(!fileReplicationRunning) fileReplicationRunning = true; //there are two nodes in network, so start replicating
                         break;
 
                     case "f": //its a message with filename
@@ -321,6 +329,7 @@ public class NamingNode
         Thread UDPListener;
 
         //File replication
+        fileReplicationRunning = false;
         Thread DirWatcherThr;
 
 

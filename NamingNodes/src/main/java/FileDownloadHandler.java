@@ -4,10 +4,17 @@ import java.net.*;
 public class FileDownloadHandler implements Runnable
 {
     private String filename;
+    private String previousIP;
 
     public FileDownloadHandler(String filename)
     {
         this.filename = filename;
+    }
+
+    public FileDownloadHandler(String filename, String previousIP)
+    {
+        this.filename = filename;
+        this.previousIP = previousIP;
     }
 
     public void run()
@@ -43,6 +50,18 @@ public class FileDownloadHandler implements Runnable
 
             bos.write(mybytearray, 0 , current);
             bos.flush();
+
+            //if file is local on this server, start upload thread to previous node
+            File[] listOfFiles = Constants.localFileDirectory.listFiles();
+
+            for (int i = 0; i < listOfFiles.length; i++) {
+                if (listOfFiles[i].isFile() && listOfFiles[i].equals(filename))
+                {
+                    FileUploadHandler FUH = new FileUploadHandler(filename, previousIP, true);
+                    Thread FileUplHThr = new Thread(FUH);
+                    FileUplHThr.start();
+                }
+            }
 
         }catch(Exception e) {}
         try {
