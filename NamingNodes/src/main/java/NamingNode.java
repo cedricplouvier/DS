@@ -10,6 +10,8 @@ import java.rmi.server.*;
 
 public class NamingNode
 {
+    private static NamingNode nn;
+    private static Integer nextNodeID;
     private static final int MULTICAST_PORT = 4321;
     private static final String MULTICAST_IP = "225.4.5.6";
     private static final String MULTICAST_INTERFACE = "eth0";
@@ -73,7 +75,7 @@ public class NamingNode
     }
 
     //Failure protocol
-    public void failure(Integer failedNode, NamingInterface stub) throws IOException, XMLStreamException
+    public void failure(Integer failedNode, final NamingInterface stub) throws IOException, XMLStreamException
     {
         DatagramSocket UCsocket = new DatagramSocket(4445);
         String receivedAr[] = stub.failure(failedNode).split(" ");
@@ -86,11 +88,31 @@ public class NamingNode
         nodeMessage = "p " + previousNode;
         UDPSend(UCsocket, nodeMessage, stub.getIP(nextNode), 4445);
         UCsocket.close();
+        final Thread pinger = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {pinger(stub); } catch(Exception e){}
+            }
+        });
+        pinger.start();
+    }
+
+    public void pinger(NamingInterface stub) throws IOException, XMLStreamException
+    {
+        while(true)
+    {
+        InetAddress nextNode = InetAddress.getByName(stub.getIP(nextNodeID));
+        if (!nextNode.isReachable(5000))
+        {
+            failure(nextNodeID,stub);
+            break;
+        }
+    }
     }
 
     public static void main(String[] args) throws IOException
     {
-        NamingNode nn = new NamingNode();
+        nn = new NamingNode();
         //IP
         String hostname;
         String ipString;
@@ -99,7 +121,7 @@ public class NamingNode
         String[] receivedAr = new String[10];
         Integer newNodeID;
         Integer thisNodeID;
-        Integer nextNodeID = 33000;
+        nextNodeID = 33000;
         Integer previousNodeID = 0;
         int amountOfNodes;
         byte buf[] = new byte[1024];
@@ -110,7 +132,7 @@ public class NamingNode
         try {
             //RMI
             Registry registry = LocateRegistry.getRegistry(ServerIP, 1099); //server IP and port
-            NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
+            final NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
 
             //Bootstrap + Discovery
             ipString = nn.getThisIP().getHostAddress(); // InetAddress to string
@@ -123,11 +145,19 @@ public class NamingNode
             DatagramSocket UCsendingSocket = new DatagramSocket();
             DatagramSocket UCreceivingSocket = new DatagramSocket(4446);
 
+            //Multicast receive IP + hostname from other nodes
+            MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
+
             nameIP = "b " + ipString + " " + hostname; //bootstrap message
             nn.UDPSend(MCSocket, nameIP, MULTICAST_IP, MULTICAST_PORT);
 
-            //Multicast receive IP + hostname from other nodes
-            MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
+            Thread pinger = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {nn.pinger(stub);} catch (Exception e) {}
+                }
+            });
+            pinger.start();
             while(true)
             {
                 UCreceivingSocket.receive(receivingPack);
