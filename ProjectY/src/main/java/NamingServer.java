@@ -188,10 +188,10 @@ public class NamingServer implements NamingInterface {
 
 
             MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
-            MCpacket = new DatagramPacket(MCbuf, MCbuf.length, InetAddress.getByName(MULTICAST_IP), MULTICAST_PORT);
+            MCpacket = new DatagramPacket(MCbuf, MCbuf.length);
             System.out.println("Joined MC");
             while (running) {
-                MCpacket = new DatagramPacket(UCbuf, UCbuf.length);
+                MCpacket = new DatagramPacket(MCbuf, MCbuf.length);
                 MCreceivingSocket.receive(MCpacket);
                 received = new String(MCpacket.getData(), 0, MCpacket.getLength());
                 System.out.println(received);
@@ -201,6 +201,7 @@ public class NamingServer implements NamingInterface {
                 UCbuf = mapSize.getBytes();
                 UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 4446); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
                 UCsendingSocket.send(UCpacket);
+
             }
         } catch (Exception e) {
             System.err.println("Server exception: " + e.toString());

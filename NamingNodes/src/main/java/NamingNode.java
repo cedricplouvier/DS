@@ -144,12 +144,13 @@ public class NamingNode
             MulticastSocket MCSocket = new MulticastSocket(MULTICAST_PORT);
             DatagramSocket UCsendingSocket = new DatagramSocket();
             MCSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName(ipString)));
-            DatagramSocket UCreceivingSocket = new DatagramSocket(4449);
+            DatagramSocket UCreceivingSocket = new DatagramSocket(4446);
 
             //Multicast receive IP + hostname from other nodes
             MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
 
             nameIP = "b " + ipString + " " + hostname; //bootstrap message
+            System.out.println(nameIP);
             nn.UDPSend(MCSocket, nameIP, MULTICAST_IP, MULTICAST_PORT);
 
             Thread pinger = new Thread(new Runnable() {
@@ -172,6 +173,10 @@ public class NamingNode
                         nextNodeID = thisNodeID;
                         previousNodeID = thisNodeID;
                         System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
+                    }
+                    else if (amountOfNodes > 1){
+                        System.out.println("more than 1 node active");
+                        //trigger om previous & next toe te voegen
                     }
                     else
                     {
