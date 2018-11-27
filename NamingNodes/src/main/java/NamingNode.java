@@ -143,6 +143,7 @@ public class NamingNode
             //Multicast send IP + hostname to all
             MulticastSocket MCSocket = new MulticastSocket(MULTICAST_PORT);
             DatagramSocket UCsendingSocket = new DatagramSocket();
+            MCSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName(ipString)));
             DatagramSocket UCreceivingSocket = new DatagramSocket(4446);
 
             //Multicast receive IP + hostname from other nodes
