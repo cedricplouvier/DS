@@ -118,7 +118,9 @@ public class NamingNode
         String ipString;
         //Multicast
         String received;
-        String[] receivedAr = new String[10];
+        String[] receivedAr;
+        String prevNextString;
+        String[] prevNextStringAr;
         Integer newNodeID;
         Integer thisNodeID;
         nextNodeID = 33000;
@@ -142,12 +144,11 @@ public class NamingNode
 
             //Multicast send IP + hostname to all
             MulticastSocket MCSocket = new MulticastSocket(MULTICAST_PORT);
-            DatagramSocket UCsendingSocket = new DatagramSocket();
             MCSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName(ipString)));
-            DatagramSocket UCreceivingSocket = new DatagramSocket(4446);
+            MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP));
 
-            //Multicast receive IP + hostname from other nodes
-            MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
+            DatagramSocket UCsendingSocket = new DatagramSocket();
+            DatagramSocket UCreceivingSocket = new DatagramSocket(4446);
 
             nameIP = "b " + ipString + " " + hostname; //bootstrap message
             System.out.println(nameIP);
@@ -166,9 +167,10 @@ public class NamingNode
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
                 if(receivingPack.getAddress().toString().equals("/192.168.0.4")) //if from server IP
                 {
-                    amountOfNodes = Integer.parseInt(received);
+                    receivedAr = received.split(" ");
+                    amountOfNodes = Integer.parseInt(receivedAr[0]);
                     System.out.println(amountOfNodes);
-                    if(amountOfNodes <= 1)
+                    if(amountOfNodes == 1)
                     {
                         nextNodeID = thisNodeID;
                         previousNodeID = thisNodeID;
@@ -176,7 +178,8 @@ public class NamingNode
                     }
                     else if (amountOfNodes > 1){
                         System.out.println("more than 1 node active");
-                        //trigger om previous & next toe te voegen
+                        previousNodeID = Integer.parseInt(receivedAr[1]);
+                        nextNodeID = Integer.parseInt(receivedAr[2]);
                     }
                     else
                     {
