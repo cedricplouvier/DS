@@ -180,7 +180,11 @@ public class NamingNode
                         System.out.println("more than 1 node active");
                         System.out.println(received);
                         previousNodeID = Integer.parseInt(receivedAr[1]);
+                        nodeMessage = "p " + previousNodeID; //p for previous nodeID message
+                        nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4446 );
                         nextNodeID = Integer.parseInt(receivedAr[2]);
+                        nodeMessage = "n " + nextNodeID; //p for previous nodeID message
+                        nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4446 );
                     }
                     else
                     {
