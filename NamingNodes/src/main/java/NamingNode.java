@@ -17,9 +17,9 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 public class NamingNode
 {
-    private static NamingNode nn;
+    //private static NamingNode nn;
 
-    private Integer thisNodeID;
+    private Integer nnNodeID;
     public Integer nextNodeID;
     private Integer previousNodeID;
 
@@ -35,18 +35,10 @@ public class NamingNode
         return Math.abs(hostname.hashCode()) % 32768;
     }
 
-    //get the IP from this node
+    //get the IP from nn node
     public InetAddress getThisIP()
     {
         try {
-
-            //RMI connection
-            Registry registry = LocateRegistry.getRegistry(Constants.SERVER_IP); //connect to right interface of namingserver (normally 192.168.0.4)
-            NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
-            String response = stub.sayHello();
-            System.out.println(response);
-
-            //add node
             Enumeration e = NetworkInterface.getNetworkInterfaces();
             while (e.hasMoreElements()) {
                 NetworkInterface n = (NetworkInterface) e.nextElement();
@@ -63,7 +55,7 @@ public class NamingNode
     }
 
     //Shutdown protocol
-    public void shutdown(DatagramSocket sendingSocket, NamingInterface stub, Integer thisNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
+    public void shutdown(DatagramSocket sendingSocket, NamingInterface stub, Integer nnNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
     {
         File[] listOfFiles = Constants.replicationFileDirectory.listFiles();
         Thread FileUplHThr;
@@ -86,7 +78,7 @@ public class NamingNode
                 FileUplHThr.start();
             }
         }
-        stub.removeNode(thisNodeID); //remove node from IPMap on the server
+        stub.removeNode(nnNodeID); //remove node from IPMap on the server
     }
 
     //sending packets with UDP, unicast/multicast
@@ -111,31 +103,6 @@ public class NamingNode
         nodeMessage = "p " + previousNode;
         UDPSend(UCsocket, nodeMessage, stub.getIP(nextNode), 4446);
         UCsocket.close();
-        final Thread pinger = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {pinger(stub); } catch(Exception e){}
-            }
-        });
-        pinger.start();
-    }
-
-    public void pinger(NamingInterface stub) throws IOException, XMLStreamException
-    {
-        while(true)
-    {
-        InetAddress nextNode = InetAddress.getByName(stub.getIP(nextNodeID));
-        if (!nextNode.isReachable(5000))
-        {
-            failure(nextNodeID,stub);
-            System.out.println(nextNode + " isnt reachable");
-            break;
-        }
-        else if(nextNode.isReachable(5000))
-        {
-            System.out.println(nextNode + " is reachable");
-        }
-    }
     }
 
     //Listens for UDP unicasts, from server or other nodes, with info over new nodes or when replication file needs to be downloaded
@@ -164,8 +131,8 @@ public class NamingNode
                 receivedAr = received.split(" ");
                 amountOfNodes = Integer.parseInt(receivedAr[0]);
                 if (amountOfNodes == 1) {
-                    nn.nextNodeID = nn.thisNodeID;
-                    nn.previousNodeID = nn.thisNodeID;
+                    this.nextNodeID = this.nnNodeID;
+                    this.previousNodeID = this.nnNodeID;
                     System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                 }
                 else if(amountOfNodes > 1) //if there are more than 1 node in the network, start
@@ -173,13 +140,13 @@ public class NamingNode
                     fileReplicationRunning = true;
                     previousNodeID = Integer.parseInt(receivedAr[1]);
                     nextNodeID = Integer.parseInt(receivedAr[2]);
-                    startUpThr = new Thread(new Runnable() {
+                    /*startUpThr = new Thread(new Runnable() {
                         @Override
                         public void run() {
                             try{ fileReplicationStartup(stub); }catch(Exception e) {}
                         }
                     });
-                    startUpThr.start();
+                    startUpThr.start();*/
                 }
                 else System.out.println("Error: amount of nodes smaller than 0!");
             }
@@ -188,28 +155,13 @@ public class NamingNode
                 receivedAr = received.split(" ");
 
                 switch(receivedAr[0]) {
-                    case "b": //b for bootstrap message
-                        newNodeID = nn.calculateHash(receivedAr[1]);
-                        if ((nn.thisNodeID < newNodeID) && (newNodeID < nn.nextNodeID)) //This is the previous node
-                        {
-                            nn.nextNodeID = newNodeID;
-                            nodeMessage = "p " + nn.thisNodeID; //p for previous nodeID message
-                            nn.UDPSend(UCsendingSocket, nodeMessage, receivedAr[0], 4999);
-                        } else if ((nn.previousNodeID < newNodeID) && (newNodeID < nn.thisNodeID)) //This is the next node
-                        {
-                            nn.previousNodeID = newNodeID;
-                            nodeMessage = "n " + nn.thisNodeID;
-                            nn.UDPSend(UCsendingSocket, nodeMessage, receivedAr[0], 4999);
-                        }
-                        break;
-
                     case "p": //its a previous node message
-                        nn.previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
+                        this.previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
                         if(!fileReplicationRunning) fileReplicationRunning = true; //there are two nodes in network, so start replicating
                         break;
 
                     case "n": //its a next node message
-                        nn.nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
+                        this.nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                         if(!fileReplicationRunning) fileReplicationRunning = true; //there are two nodes in network, so start replicating
                         break;
 
@@ -237,7 +189,7 @@ public class NamingNode
             if (listOfFiles[i].isFile())
             {
                 //determine node where the replicated file will be stored
-                if((stub.fileLocator(listOfFiles[i].getName())).equals(thisNodeID)) //if replication node is the current node
+                if((stub.fileLocator(listOfFiles[i].getName())).equals(nnNodeID)) //if replication node is the current node
                 {
                     replicationNode = previousNodeID; //replication will be on the previous node
                 }
@@ -264,10 +216,10 @@ public class NamingNode
         {
             if (listOfFiles[i].isFile())
             {
-                //if file shouldn't be stored on this node anymore
-                if(!(stub.fileLocator(listOfFiles[i].getName())).equals(thisNodeID))
+                //if file shouldn't be stored on nn node anymore
+                if(!(stub.fileLocator(listOfFiles[i].getName())).equals(nnNodeID))
                 {
-                    //upload to other node and gets deleted on this one
+                    //upload to other node and gets deleted on nn one
                     replicationNode = stub.fileLocator(listOfFiles[i].getName());
                     FileUploadHandler FUH = new FileUploadHandler(listOfFiles[i].getName(), stub.getIP(replicationNode), true);
                     FileUplHThr = new Thread(FUH);
@@ -350,9 +302,8 @@ public class NamingNode
         }catch(Exception e){}
     }
 
-    public static void main(String[] args) throws IOException
+    public void start() throws IOException
     {
-        nn = new NamingNode();
         //IP
         String hostname;
         String ipString;
@@ -369,14 +320,14 @@ public class NamingNode
 
         try {
             //RMI
-            Registry registry = LocateRegistry.getRegistry("192.168.0.4", 1099); //server IP and port
+            Registry registry = LocateRegistry.getRegistry(Constants.SERVER_IP, 1099); //server IP and port
             final NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
 
             //Bootstrap + Discovery
-            ipString = nn.getThisIP().getHostAddress(); // InetAddress to string
+            ipString = this.getThisIP().getHostAddress(); // InetAddress to string
             System.out.println(ipString);
             hostname = "Node" + ipString.substring(10); //hostname dependant on last digit of IP
-            nn.thisNodeID = nn.calculateHash(hostname);
+            this.nnNodeID = this.calculateHash(hostname);
 
             //Multicast send IP + hostname to all
             MulticastSocket MCSocket = new MulticastSocket(Constants.MULTICAST_PORT);
@@ -386,9 +337,9 @@ public class NamingNode
             DatagramSocket UCsendingSocket = new DatagramSocket();
 
 
-            //BOOTSTRAP
-            nameIP = "b " + ipString + " " + hostname; //bootstrap message
-            nn.UDPSend(MCSocket, nameIP, Constants.MULTICAST_IP, Constants.MULTICAST_PORT);
+            //bootstrap message
+            nameIP = "b " + ipString + " " + hostname;
+            this.UDPSend(MCSocket, nameIP, Constants.MULTICAST_IP, Constants.MULTICAST_PORT);
 
             //Join multicast group
             MCSocket.joinGroup(InetAddress.getByName(Constants.MULTICAST_IP)); //NetworkInterface.getByName(MULTICAST_INTERFACE)
@@ -397,28 +348,19 @@ public class NamingNode
             UDPListener = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    nn.discovery(stub);
+                    discovery(stub);
                 }
             });
             UDPListener.start();
 
             //Check for changes in directory
-            DirWatcherThr = new Thread(new Runnable() {
+            /*DirWatcherThr = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    nn.directoryWatcher(stub);
+                    directoryWatcher(stub);
                 }
             });
-            DirWatcherThr.start();
-
-            while(true)
-            {
-
-                /*nn.shutdown(UCsendingSocket, stub, thisNodeID, nextNodeID, previousNodeID); //works
-                break;*/
-            }
-
-
+            DirWatcherThr.start();*/
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();
