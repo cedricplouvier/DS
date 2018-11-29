@@ -60,6 +60,9 @@ public class NamingServer implements NamingInterface
             if (this.IPmap.size() > 1) {
                 recalculate();
                 //writeToXML();
+                for (Map.Entry<Integer, String> entry : IPmap.entrySet()) {
+                    System.out.println("Key: " + entry.getKey() + ". Value: " + entry.getValue());
+                }
             }
             System.out.printf("Node removed");
         } else System.out.println("Node not in system.");
