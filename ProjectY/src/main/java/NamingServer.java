@@ -3,15 +3,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.*;
 import java.rmi.RemoteException;
-import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.xml.stream.*;
-import java.nio.ByteBuffer;
 
 public class NamingServer implements NamingInterface {
 
@@ -32,26 +29,21 @@ public class NamingServer implements NamingInterface {
 
     private static final int MULTICAST_PORT = 4321;
     private static final String MULTICAST_IP = "225.4.5.6";
-    private static final String MULTICAST_INTERFACE = "eth0";
-    private static final String ServerIP = "192.168.0.4";
 
-
-    public NamingServer() {
-    }
-
-    public String sayHello() {
-        return "connection made!";
-    }
 
     public Integer returnHash(String name)
     {
         return Math.abs(name.hashCode()) % 32768;
     }
 
-    //add node to IPmap, recalculate the file distribution and write the IPmap to an XML file
-    public void addNode(String hostname, String IP) throws IOException, XMLStreamException {
-        Integer nodeID = returnHash(hostname);
+    public String sayHello() {
+        return "connection made!";
+    }
 
+    //add node to IPmap, recalculate the file distribution and write the IPmap to an XML file
+    public void addNode(String hostname, String IP) throws IOException, XMLStreamException
+    {
+        Integer nodeID = returnHash(hostname);
         if (!IPmap.containsKey(nodeID)) {
             IPmap.put(nodeID, IP);
             System.out.println(hostname + " and ip " + IP);
@@ -85,13 +77,14 @@ public class NamingServer implements NamingInterface {
     }
 
     //what node calls, via RMI, to know the IP of the node a file is located on
-    public String fileLocator(String filename) {
+    public Integer fileLocator(String filename)
+    {
         int fileHash = returnHash(filename);
         Integer closestKey = ns.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
         if (closestKey == null) {
             closestKey = ns.IPmap.lastKey(); //returns highest key in this map
         }
-        return ns.IPmap.get(closestKey); //returns IP associated with this nodeID
+        return closestKey; //returns IP associated with this nodeID
     }
 
     //distributes the files over all nodes, evenly
@@ -174,7 +167,6 @@ public class NamingServer implements NamingInterface {
             NamingInterface stub = (NamingInterface) UnicastRemoteObject.exportObject(ns, 0);
 
             // Bind the remote object's stub in the registry
-            //Registry registry = LocateRegistry.getRegistry();
             Registry registry = LocateRegistry.createRegistry(1099);
             registry.bind("NamingInterface", stub);
             System.out.println(registry); //print the right IP to connect to in Client
@@ -184,7 +176,7 @@ public class NamingServer implements NamingInterface {
             //create Multicast and unicast sockets
 
             MCreceivingSocket = new MulticastSocket(MULTICAST_PORT);
-            MCreceivingSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName(ServerIP)));
+            MCreceivingSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName("192.168.0.4")));
             UCreceivingSocket = new DatagramSocket(4448);
             UCsendingSocket = new DatagramSocket();
 
