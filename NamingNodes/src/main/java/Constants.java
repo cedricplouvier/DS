@@ -6,6 +6,8 @@ public final class Constants
     public static final String MULTICAST_IP = "225.4.5.6";
     public static final String MULTICAST_INTERFACE = "eth0";
 
+    public static final String SERVER_IP = "192.168.0.4";
+
     public static final int UDPFileName_PORT = 4200;
 
     public static final int TCP_FILE_PORT = 6789;

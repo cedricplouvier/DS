@@ -41,7 +41,7 @@ public class NamingNode
         try {
 
             //RMI connection
-            Registry registry = LocateRegistry.getRegistry(ServerIP); //connect to right interface of namingserver (normally 192.168.0.4)
+            Registry registry = LocateRegistry.getRegistry(Constants.SERVER_IP); //connect to right interface of namingserver (normally 192.168.0.4)
             NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
             String response = stub.sayHello();
             System.out.println(response);
@@ -379,9 +379,9 @@ public class NamingNode
             nn.thisNodeID = nn.calculateHash(hostname);
 
             //Multicast send IP + hostname to all
-            MulticastSocket MCSocket = new MulticastSocket(MULTICAST_PORT);
+            MulticastSocket MCSocket = new MulticastSocket(Constants.MULTICAST_PORT);
             MCSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName(ipString)));
-            MCSocket.joinGroup(InetAddress.getByName(MULTICAST_IP));
+            MCSocket.joinGroup(InetAddress.getByName(Constants.MULTICAST_IP));
 
             DatagramSocket UCsendingSocket = new DatagramSocket();
 
