@@ -105,7 +105,12 @@ public class NamingNode
         if (!nextNode.isReachable(5000))
         {
             failure(nextNodeID,stub);
+            System.out.println(nextNode + " isnt reachable");
             break;
+        }
+        else if(nextNode.isReachable(5000))
+        {
+            System.out.println(nextNode + " is reachable");
         }
     }
     }
@@ -150,17 +155,18 @@ public class NamingNode
             DatagramSocket UCsendingSocket = new DatagramSocket();
             DatagramSocket UCreceivingSocket = new DatagramSocket(4446);
 
+
             nameIP = "b " + ipString + " " + hostname; //bootstrap message
             System.out.println(nameIP);
             nn.UDPSend(MCSocket, nameIP, MULTICAST_IP, MULTICAST_PORT);
 
-            Thread pinger = new Thread(new Runnable() {
+             /*Thread pinger = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {nn.pinger(stub);} catch (Exception e) {}
                 }
             });
-            pinger.start();
+            pinger.start(); */
             while(true)
             {
                 UCreceivingSocket.receive(receivingPack);
@@ -178,13 +184,13 @@ public class NamingNode
                     }
                     else if (amountOfNodes > 1){
                         System.out.println("more than 1 node active");
-                        System.out.println(received);
+                        System.out.println("");
                         previousNodeID = Integer.parseInt(receivedAr[1]);
-                        nodeMessage = "p " + previousNodeID; //p for previous nodeID message
-                        nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4446 );
+                        nodeMessage = "p " + thisNodeID; //p for previous nodeID message
+                        nn.UDPSend(UCsendingSocket, nodeMessage,stub.getIP(previousNodeID), 4446 );
                         nextNodeID = Integer.parseInt(receivedAr[2]);
-                        nodeMessage = "n " + nextNodeID; //p for previous nodeID message
-                        nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4446 );
+                        nodeMessage = "n " + thisNodeID; //p for previous nodeID message
+                        nn.UDPSend(UCsendingSocket, nodeMessage,stub.getIP(nextNodeID), 4446 );
                     }
                     else
                     {
@@ -194,7 +200,6 @@ public class NamingNode
                 else //if from any other IP => node
                 {
                     receivedAr = received.split(" ");
-                    System.out.println(receivedAr[0]);
                     if(receivedAr[0].equals("b")) //b for bootstrap message
                     {
                         newNodeID = nn.calculateHash(receivedAr[1]);
@@ -209,24 +214,26 @@ public class NamingNode
                             previousNodeID = newNodeID;
                             nodeMessage = "n " + thisNodeID;
                             nn.UDPSend(UCsendingSocket, nodeMessage,receivedAr[0], 4446 );
+
                         }
                     }
                     else if(receivedAr[0].equals("p")) //its a previous node message
                     {
-                        previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
+                        nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
                         System.out.println("nextmode = " + nextNodeID + " , previousNode = " + previousNodeID);
 
                     }
                     else if(receivedAr[0].equals("n")) //its a next node message
                     {
-                        nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
+                        previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                         System.out.println("nextmode = " + nextNodeID + " , previousNode = " + previousNodeID);
+
 
                     }
 
 
                 }
-                //nn.shutdown(UCsendingSocket, stub, thisNodeID, nextNodeID, previousNodeID); //works
+                //nn.shutdown(UCsendingSocket, stub, thisNodeID, nextNodeID, previousNodeID); //works but watch out where you put it. 
                 //break;
             }
 
