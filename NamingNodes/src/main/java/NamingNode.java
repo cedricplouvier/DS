@@ -169,7 +169,7 @@ public class NamingNode
                 {
                     receivedAr = received.split(" ");
                     amountOfNodes = Integer.parseInt(receivedAr[0]);
-                    System.out.println(amountOfNodes);
+                    System.out.println("amount of nodes = " + amountOfNodes);
                     if(amountOfNodes == 1)
                     {
                         nextNodeID = thisNodeID;
@@ -178,6 +178,7 @@ public class NamingNode
                     }
                     else if (amountOfNodes > 1){
                         System.out.println("more than 1 node active");
+                        System.out.println(received);
                         previousNodeID = Integer.parseInt(receivedAr[1]);
                         nextNodeID = Integer.parseInt(receivedAr[2]);
                     }

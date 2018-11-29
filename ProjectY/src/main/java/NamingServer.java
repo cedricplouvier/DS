@@ -203,15 +203,27 @@ public class NamingServer implements NamingInterface {
                 System.out.println(received);
                 receivedAr = received.split(" ");
                 ns.addNode(receivedAr[2], receivedAr[1]); //add node with hostname and IP sent with UDP multicast
+                System.out.println("map size: " + ns.IPmap.size());
                 if(ns.IPmap.size() == 1)
                 {
                     bootstrapReturnMsg  = Integer.toString(ns.IPmap.size());
                 }
                 else if(ns.IPmap.size() > 1)
                 {
-                    previous = ns.IPmap.lowerKey(ns.returnHash(receivedAr[2]));
-                    next = ns.IPmap.higherKey(ns.returnHash(receivedAr[2]));
-                    bootstrapReturnMsg = Integer.toString(ns.IPmap.size()) + Integer.toString(previous) + Integer.toString(next);
+
+                    if (ns.IPmap.lowerKey(ns.returnHash(receivedAr[2])) == null){
+                        previous = ns.IPmap.lastKey();
+                    }
+                    else {
+                        previous = ns.IPmap.lowerKey(ns.returnHash(receivedAr[2]));
+                    }
+                    if (ns.IPmap.higherKey(ns.returnHash(receivedAr[2])) == null){
+                        next = ns.IPmap.firstKey();
+                    }
+                    else{
+                        next = ns.IPmap.higherKey(ns.returnHash(receivedAr[2]));
+                    }
+                    bootstrapReturnMsg = Integer.toString(ns.IPmap.size()) + " " + Integer.toString(previous)+ " " + Integer.toString(next);
                 }
                 UCbuf = bootstrapReturnMsg.getBytes();
                 UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 4446); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
