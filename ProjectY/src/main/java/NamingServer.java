@@ -173,10 +173,6 @@ public class NamingServer implements NamingInterface
             UCsendingSocket = new DatagramSocket();
 
             //join the multicast group
-
-
-
-
             MCreceivingSocket.joinGroup(InetAddress.getByName(MULTICAST_IP));
             MCpacket = new DatagramPacket(MCbuf, MCbuf.length);
             System.out.println("Joined MC");

@@ -64,10 +64,10 @@ public class NamingNode
         String previousIP = stub.getIP(previousNodeID);
         //send nextNodeID to your previous node
         String sendingStr = "n " + nextNodeID;
-        UDPSend(sendingSocket, sendingStr, previousIP, 4446);
+        UDPSend(sendingSocket, sendingStr, previousIP, Constants.UDP_PORT);
         //send previousNodeID to your next node
         sendingStr = "p " + previousNodeID;
-        UDPSend(sendingSocket, sendingStr, nextIP, 4446);
+        UDPSend(sendingSocket, sendingStr, nextIP, Constants.UDP_PORT);
 
         //send all files from replicationDir to the previous node and delete them, locally, when done
         /*for (int i = 0; i < listOfFiles.length; i++)
@@ -93,16 +93,16 @@ public class NamingNode
     //Failure protocol
     public void failure(Integer failedNode, final NamingInterface stub) throws IOException, XMLStreamException
     {
-        DatagramSocket UCsocket = new DatagramSocket(4446);
+        DatagramSocket UCsocket = new DatagramSocket(Constants.UDP_PORT);
         String receivedAr[] = stub.failure(failedNode).split(" ");
         //give previous node of the failed one, his new next node
         Integer previousNode = Integer.valueOf(receivedAr[0]);
         Integer nextNode = Integer.valueOf(receivedAr[1]);
         String nodeMessage = "n " + nextNode;
-        UDPSend(UCsocket, nodeMessage, stub.getIP(previousNode), 4446);
+        UDPSend(UCsocket, nodeMessage, stub.getIP(previousNode), Constants.UDP_PORT);
         //give next node of the failed one, his new previous node
         nodeMessage = "p " + previousNode;
-        UDPSend(UCsocket, nodeMessage, stub.getIP(nextNode), 4446);
+        UDPSend(UCsocket, nodeMessage, stub.getIP(nextNode), Constants.UDP_PORT);
         UCsocket.close();
     }
 
@@ -121,7 +121,7 @@ public class NamingNode
         while(running)
         {
             try {
-                DatagramSocket UCreceivingSocket = new DatagramSocket(4446);
+                DatagramSocket UCreceivingSocket = new DatagramSocket(Constants.UDP_PORT);
                 DatagramSocket UCsendingSocket = new DatagramSocket();
                 DatagramPacket receivingPack = new DatagramPacket(buf, buf.length, InetAddress.getByName(Constants.MULTICAST_IP), Constants.MULTICAST_PORT);
 
@@ -145,9 +145,9 @@ public class NamingNode
                         previousNodeID = Integer.parseInt(receivedAr[1]);
                         nextNodeID = Integer.parseInt(receivedAr[2]);
                         nodeMessage = "p " + thisNodeID;
-                        UDPSend(UCsendingSocket, nodeMessage, stub.getIP(previousNodeID), 4446);
+                        UDPSend(UCsendingSocket, nodeMessage, stub.getIP(previousNodeID), Constants.UDP_PORT);
                         nodeMessage = "n " + thisNodeID;
-                        UDPSend(UCsendingSocket, nodeMessage, stub.getIP(nextNodeID), 4446);
+                        UDPSend(UCsendingSocket, nodeMessage, stub.getIP(nextNodeID), Constants.UDP_PORT);
                     /*startUpThr = new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -176,6 +176,7 @@ public class NamingNode
                             break;
 
                         case "f": //its a message with filename
+                            UDPSend(UCsendingSocket,"ack",receivingPack.getAddress().toString(),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
                             FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1]); //start TCP socket thread
                             FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
                             FileDwnThr.start();

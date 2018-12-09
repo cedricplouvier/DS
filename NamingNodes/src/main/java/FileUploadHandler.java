@@ -34,6 +34,7 @@ public class FileUploadHandler implements Runnable
     {
         String deletePath;
         File deleteFile;
+        String received;
 
         FileInputStream fis = null;
         BufferedInputStream bis = null;
@@ -47,6 +48,11 @@ public class FileUploadHandler implements Runnable
             byte[] UDPbuf = fileMsg.getBytes();
             DatagramPacket UDPpacket = new DatagramPacket(UDPbuf, UDPbuf.length, InetAddress.getByName(ip), Constants.UDPFileName_PORT);
             UDPSocket.send(UDPpacket);
+            do {
+                DatagramPacket receivingPack = new DatagramPacket(UDPbuf, UDPbuf.length, InetAddress.getByName(ip), Constants.UDPFileName_PORT);
+                UDPSocket.receive(receivingPack);
+                received = new String(receivingPack.getData(), 0, receivingPack.getLength());
+            }while(!received.equals("ack")); //wait for ack from downloader, to know he is receiving
 
            //send file with TCP
             TCPsocket = new Socket(ip, Constants.TCP_FILE_PORT);
