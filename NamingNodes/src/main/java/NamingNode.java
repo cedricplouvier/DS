@@ -244,6 +244,7 @@ public class NamingNode
                 FileUplHThr.join();
             //}
         }
+        System.out.println("FileRep Startup done!");
     }
 
     //gets called when previous node gets added, node checks if its replication files need to be stored on the new node
