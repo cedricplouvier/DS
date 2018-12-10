@@ -71,11 +71,15 @@ public class NamingServer implements NamingInterface
     //what node calls, via RMI, to know the IP of the node a file is located on
     public Integer fileLocator(String filename)
     {
+        System.out.println("filename: " + filename);
+
         int fileHash = returnHash(filename);
+        System.out.println("fileHash" + fileHash);
         Integer closestKey = this.IPmap.floorKey(fileHash); //returns the greatest key less than or equal to the given key, or null if there is no such key.
         if (closestKey == null) {
             closestKey = this.IPmap.lastKey(); //returns highest key in this map
         }
+        System.out.println("closest key " + closestKey);
         return closestKey; //returns IP associated with this nodeID
     }
 
@@ -190,18 +194,22 @@ public class NamingServer implements NamingInterface
                 }
                 else if(this.IPmap.size() > 1)
                 {
-
+                    System.out.println("test1");
                     if (this.IPmap.lowerKey(this.returnHash(receivedAr[2])) == null){
                         previous = this.IPmap.lastKey();
+                        System.out.println("test lower");
                     }
                     else {
                         previous = this.IPmap.lowerKey(this.returnHash(receivedAr[2]));
+                        System.out.println("test lowest");
                     }
                     if (this.IPmap.higherKey(this.returnHash(receivedAr[2])) == null){
                         next = this.IPmap.firstKey();
+                        System.out.println("test high");
                     }
                     else{
                         next = this.IPmap.higherKey(this.returnHash(receivedAr[2]));
+                        System.out.println("test");
                     }
                     bootstrapReturnMsg = Integer.toString(this.IPmap.size()) + " " + Integer.toString(previous)+ " " + Integer.toString(next);
                 }

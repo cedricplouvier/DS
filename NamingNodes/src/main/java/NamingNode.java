@@ -128,8 +128,10 @@ public class NamingNode
 
                 UCreceivingSocket.receive(receivingPack);
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
+                System.out.println(received);
                 if (receivingPack.getAddress().toString().equals("/192.168.0.4")) //if from server IP
                 {
+                    System.out.println(received);
                     receivedAr = received.split(" ");
                     amountOfNodes = Integer.parseInt(receivedAr[0]);
                     System.out.println("AoN: "+amountOfNodes);
@@ -144,10 +146,23 @@ public class NamingNode
                         fileReplicationRunning = true; //if there are more than 1 node in the network, start replicating
                         previousNodeID = Integer.parseInt(receivedAr[1]);
                         nextNodeID = Integer.parseInt(receivedAr[2]);
-                        nodeMessage = "p " + thisNodeID;
-                        UDPSend(UCsendingSocket, nodeMessage, stub.getIP(previousNodeID), Constants.UDP_PORT);
-                        nodeMessage = "n " + thisNodeID;
-                        UDPSend(UCsendingSocket, nodeMessage, stub.getIP(nextNodeID), Constants.UDP_PORT);
+
+                        if (previousNodeID.equals(nextNodeID)){
+                            nodeMessage = "pn " + thisNodeID;
+                            UDPSend(UCsendingSocket, nodeMessage, stub.getIP(previousNodeID), Constants.UDP_PORT);
+                            System.out.println(nodeMessage + " pn send");
+
+                        }
+                        else {
+                            nodeMessage = "p " + thisNodeID;
+                            System.out.println("ip vorige : " + stub.getIP(previousNodeID));
+                            UDPSend(UCsendingSocket, nodeMessage, stub.getIP(previousNodeID), Constants.UDP_PORT);
+                            nodeMessage = "n " + thisNodeID;
+                            UDPSend(UCsendingSocket, nodeMessage, stub.getIP(nextNodeID), Constants.UDP_PORT);
+                        }
+                        System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
+
+                        //    System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                     /*startUpThr = new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -160,8 +175,9 @@ public class NamingNode
                 }
                 else //if from any other IP => node
                 {
+                    System.out.println(received + " goed aangekomen");
                     receivedAr = received.split(" ");
-
+                    System.out.println(receivedAr);
                     switch(receivedAr[0]) {
                         case "p": //its a previous node message
                             previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
@@ -171,6 +187,12 @@ public class NamingNode
 
                         case "n": //its a next node message
                             nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
+                            if(!fileReplicationRunning) fileReplicationRunning = true; //there are two nodes in network, so start replicating
+                            System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
+                            break;
+                        case "pn":
+                            nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
+                            previousNodeID = Integer.valueOf(receivedAr[1]);
                             if(!fileReplicationRunning) fileReplicationRunning = true; //there are two nodes in network, so start replicating
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                             break;
@@ -187,21 +209,23 @@ public class NamingNode
                     }
                 }
             }catch (Exception e) {}
-            shutdown(stub,thisNodeID,nextNodeID,previousNodeID);
-            break;
+        //    shutdown(stub,thisNodeID,nextNodeID,previousNodeID);
+            //break;
         }
     }
 
     //at startup, checks local directory for and send files to the correct replication node (happens once)
-    public void fileReplicationStartup(NamingInterface stub) throws RemoteException, IOException
+    public void fileReplicationStartup(NamingInterface stub) throws InterruptedException, IOException
     {
         Integer replicationNode;
         Thread FileUplHThr;
         File[] listOfFiles = Constants.localFileDirectory.listFiles();
+        System.out.println("LoF: " + listOfFiles);
         for (int i = 0; i < listOfFiles.length; i++)
         {
-            if (listOfFiles[i].isFile())
-            {
+            System.out.println("a  " + listOfFiles[i]);
+            //if (listOfFiles[i].isFile())
+            //{
                 //determine node where the replicated file will be stored
                 if((stub.fileLocator(listOfFiles[i].getName())).equals(thisNodeID)) //if replication node is the current node
                 {
@@ -209,13 +233,15 @@ public class NamingNode
                 }
                 else replicationNode = stub.fileLocator(listOfFiles[i].getName()); //ask NameServer on which node it should be stored
 
+                System.out.println(replicationNode);
                 this.fileOwnerMap.put(listOfFiles[i].getName(), replicationNode);
 
                 //Start file upload, to replication node, in another thread
                 FileUploadHandler FUH = new FileUploadHandler(listOfFiles[i].getName(), stub.getIP(replicationNode));
                 FileUplHThr = new Thread(FUH);
                 FileUplHThr.start();
-            }
+                FileUplHThr.join();
+            //}
         }
     }
 
@@ -291,15 +317,18 @@ public class NamingNode
                         Path newPath = ((WatchEvent<Path>) watchEvent)
                                 .context();
                         newPathString = newPath.toString();
+                        File myFile = new File(newPath.toString());
+                                //newPath.toFile();
+                        if (myFile.isFile())
+                            System.out.println("New file created: " + newPath);
 
                         //if a file gets uploaded locally
-                        replicationNode = stub.fileLocator(newPathString);
+                        /*replicationNode = stub.fileLocator(newPathString);
                         FileUploadHandler FUH = new FileUploadHandler(newPathString, stub.getIP(replicationNode));
                         FileUplHThr = new Thread(FUH);
-                        FileUplHThr.start();
+                        FileUplHThr.start();*/
 
                         // Output
-                        //System.out.println("New file created: " + newPath);
                     } else if (ENTRY_DELETE == kind) {
                         // modified
                         Path newPath = ((WatchEvent<Path>) watchEvent)
@@ -358,15 +387,16 @@ public class NamingNode
                 }
             });
             UDPListener.start();
+            fileReplicationStartup(stub);
 
             //Check for changes in directory
-            /*DirWatcherThr = new Thread(new Runnable() {
+          /*  DirWatcherThr = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     directoryWatcher(stub);
                 }
             });
-            DirWatcherThr.start();*/
+            DirWatcherThr.start(); */
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();

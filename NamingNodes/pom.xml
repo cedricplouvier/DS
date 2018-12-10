@@ -21,7 +21,7 @@
                     <archive>
                         <manifest>
                             <!-- Jar file entry point -->
-                            <mainClass>NamingNode</mainClass>
+                            <mainClass>NodeMain</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

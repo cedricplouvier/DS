@@ -23,7 +23,7 @@
                     <archive>
                         <manifest>
                             <!-- Jar file entry point -->
-                            <mainClass>NamingServer</mainClass>
+                            <mainClass>ServerMain</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
