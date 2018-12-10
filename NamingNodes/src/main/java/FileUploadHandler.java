@@ -47,13 +47,16 @@ public class FileUploadHandler implements Runnable
             String fileMsg = "f " + filename;
             byte[] UDPbuf = fileMsg.getBytes();
             DatagramPacket UDPpacket = new DatagramPacket(UDPbuf, UDPbuf.length, InetAddress.getByName(ip), Constants.UDPFileName_PORT);
+            System.out.println("IP FUH" + ip);
             UDPSocket.send(UDPpacket);
             do {
                 DatagramPacket receivingPack = new DatagramPacket(UDPbuf, UDPbuf.length, InetAddress.getByName(ip), Constants.UDPFileName_PORT);
                 UDPSocket.receive(receivingPack);
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
+                System.out.println("received: " + received);
             }while(!received.equals("ack")); //wait for ack from downloader, to know he is receiving
 
+            System.out.println("ack received");
            //send file with TCP
             TCPsocket = new Socket(ip, Constants.TCP_FILE_PORT);
             File myFile = new File(fullPath);
