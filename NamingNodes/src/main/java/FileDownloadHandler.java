@@ -5,16 +5,19 @@ public class FileDownloadHandler implements Runnable
 {
     private String filename;
     private String previousIP;
+    private DatagramSocket filenameSocket;
 
-    public FileDownloadHandler(String filename)
+    public FileDownloadHandler(String filename, DatagramSocket filenameSocket)
     {
         this.filename = filename;
+        this.filenameSocket = filenameSocket;
     }
 
-    public FileDownloadHandler(String filename, String previousIP)
+    public FileDownloadHandler(String filename, String previousIP, DatagramSocket filenameSocket)
     {
         this.filename = filename;
         this.previousIP = previousIP;
+        this.filenameSocket = filenameSocket;
     }
 
     public void run()
@@ -57,7 +60,7 @@ public class FileDownloadHandler implements Runnable
             for (int i = 0; i < listOfFiles.length; i++) {
                 if (listOfFiles[i].isFile() && listOfFiles[i].equals(filename))
                 {
-                    FileUploadHandler FUH = new FileUploadHandler(filename, previousIP, true);
+                    FileUploadHandler FUH = new FileUploadHandler(filename, previousIP,filenameSocket, true);
                     Thread FileUplHThr = new Thread(FUH);
                     FileUplHThr.start();
                 }

@@ -25,6 +25,7 @@ public class NamingNode
     private Integer previousNodeID;
 
     private static boolean fileReplicationRunning;
+    private static DatagramSocket filenameSocket= null;
 
 
     private TreeMap<String,Integer> fileOwnerMap = new TreeMap<>(); //key is the filename, value is the nodeID it is stored on
@@ -157,14 +158,13 @@ public class NamingNode
                         }
                         System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
 
-                        //    System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
-                    /*startUpThr = new Thread(new Runnable() {
+                    startUpThr = new Thread(new Runnable() {
                         @Override
                         public void run() {
                             try{ fileReplicationStartup(stub); }catch(Exception e) {}
                         }
                     });
-                    startUpThr.start();*/
+                    startUpThr.start();
                     } else System.out.println("Error: amount of nodes smaller than 0!");
                 } else //if from any other IP => node
                 {
@@ -191,6 +191,13 @@ public class NamingNode
                             if (!fileReplicationRunning)
                                 fileReplicationRunning = true; //there are two nodes in network, so start replicating
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
+                            startUpThr = new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try{ fileReplicationStartup(stub); }catch(Exception e) {}
+                                }
+                            });
+                            startUpThr.start();
                             break;
 
                         default:
@@ -213,22 +220,30 @@ public class NamingNode
         Thread FileDwnThr;
         boolean running = true;
 
-        DatagramSocket filenameSocket = new DatagramSocket(Constants.UDPFileName_PORT);
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
 
         while(running)
         {
+            System.out.println("ready to receive file");
             filenameSocket.receive(receivingPack);
+
             received = new String(receivingPack.getData(), 0, receivingPack.getLength());
+            System.out.println("pakket received: " + received);
+
             receivedAr = received.split(" ");
 
             if(receivedAr[0].equals("f"))
             {
-                UDPSend(filenameSocket,"ack",receivingPack.getAddress().toString(),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
-                FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1]); //start TCP socket thread
+                System.out.println(receivingPack.getAddress().toString());
+                UDPSend(filenameSocket,"ack",receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
+                System.out.println("ACK sent");
+                FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1], filenameSocket); //start TCP socket thread
                 System.out.println("filename: "+receivedAr[1]);
                 FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
                 FileDwnThr.start();
+            }
+            else if (receivedAr[0].equals("ack")){
+                
             }
         }
     }
@@ -248,6 +263,7 @@ public class NamingNode
                 //determine node where the replicated file will be stored
                 if((stub.fileLocator(listOfFiles[i].getName())).equals(thisNodeID)) //if replication node is the current node
                 {
+                    System.out.println("zelfde ID");
                     replicationNode = previousNodeID; //replication will be on the previous node
                 }
                 else replicationNode = stub.fileLocator(listOfFiles[i].getName()); //ask NameServer on which node it should be stored
@@ -257,7 +273,7 @@ public class NamingNode
 
                 //Start file upload, to replication node, in another thread
 
-                FileUploadHandler FUH = new FileUploadHandler(listOfFiles[i].getName(), stub.getIP(replicationNode));
+                FileUploadHandler FUH = new FileUploadHandler(listOfFiles[i].getName(), stub.getIP(replicationNode),filenameSocket);
                 FileUplHThr = new Thread(FUH);
                 FileUplHThr.start();
                 FileUplHThr.join();
@@ -283,9 +299,9 @@ public class NamingNode
                 {
                     //upload to other node and gets deleted on nn one
                     replicationNode = stub.fileLocator(listOfFiles[i].getName());
-                    FileUploadHandler FUH = new FileUploadHandler(listOfFiles[i].getName(), stub.getIP(replicationNode), true);
-                    FileUplHThr = new Thread(FUH);
-                    FileUplHThr.start();
+                   // FileUploadHandler FUH = new FileUploadHandler(listOfFiles[i].getName(), stub.getIP(replicationNode), filenameSocket,true);
+                   // FileUplHThr = new Thread(FUH);
+                    //FileUplHThr.start();
                 }
             }
         }
@@ -319,7 +335,9 @@ public class NamingNode
             //Multicast send IP + hostname to all
             MulticastSocket MCSocket = new MulticastSocket(Constants.MULTICAST_PORT);
             MCSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName(ipString)));
-            MCSocket.joinGroup(InetAddress.getByName(Constants.MULTICAST_IP));;
+            MCSocket.joinGroup(InetAddress.getByName(Constants.MULTICAST_IP));
+
+            filenameSocket = new DatagramSocket(Constants.UDPFileName_PORT);
 
             //bootstrap message
             nameIP = "b " + ipString + " " + hostname;
@@ -333,7 +351,13 @@ public class NamingNode
                 }
             });
             UDPListener.start();
-            fileReplicationStartup(stub);
+            Thread filenameListenerThr = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try{filenameListener();}catch(Exception e){}
+                }
+            });
+            filenameListenerThr.start();
 
            /* //Check for changes in directory
             DirectoryWatcher DW = new DirectoryWatcher(stub);

@@ -194,22 +194,19 @@ public class NamingServer implements NamingInterface
                 }
                 else if(this.IPmap.size() > 1)
                 {
-                    System.out.println("test1");
+
                     if (this.IPmap.lowerKey(this.returnHash(receivedAr[2])) == null){
                         previous = this.IPmap.lastKey();
-                        System.out.println("test lower");
+
                     }
                     else {
                         previous = this.IPmap.lowerKey(this.returnHash(receivedAr[2]));
-                        System.out.println("test lowest");
                     }
                     if (this.IPmap.higherKey(this.returnHash(receivedAr[2])) == null){
                         next = this.IPmap.firstKey();
-                        System.out.println("test high");
                     }
                     else{
                         next = this.IPmap.higherKey(this.returnHash(receivedAr[2]));
-                        System.out.println("test");
                     }
                     bootstrapReturnMsg = Integer.toString(this.IPmap.size()) + " " + Integer.toString(previous)+ " " + Integer.toString(next);
                 }
