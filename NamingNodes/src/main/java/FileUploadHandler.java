@@ -50,7 +50,7 @@ public class FileUploadHandler implements Runnable
             System.out.println("IP FUH" + ip);
             UDPSocket.send(UDPpacket);
             do {
-                DatagramPacket receivingPack = new DatagramPacket(UDPbuf, UDPbuf.length, InetAddress.getByName(ip), Constants.UDPFileName_PORT);
+                DatagramPacket receivingPack = new DatagramPacket(UDPbuf, UDPbuf.length, InetAddress.getByName(ip), Constants.UDPAck_PORT);
                 UDPSocket.receive(receivingPack);
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
                 System.out.println("received: " + received);
