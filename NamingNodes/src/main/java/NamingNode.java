@@ -8,6 +8,7 @@ import java.net.*;
 import java.util.*;
 import java.net.InetAddress;
 import java.rmi.server.*;
+import java.util.concurrent.TimeoutException;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
@@ -107,8 +108,7 @@ public class NamingNode
     }
 
     //Listens for UDP unicasts, from server or other nodes, with info over new nodes or when replication file needs to be downloaded
-    public void discovery(final NamingInterface stub) throws IOException, XMLStreamException
-    {
+    public void discovery(final NamingInterface stub) throws IOException, XMLStreamException {
         String received;
         String[] receivedAr;
         byte buf[] = new byte[1024];
@@ -117,14 +117,13 @@ public class NamingNode
         boolean running = true;
 
         Thread startUpThr;
-        while(running)
-        {
+        Thread FileDwnThr;
+        DatagramSocket UCreceivingSocket = new DatagramSocket(Constants.UDP_PORT);
+        DatagramSocket UCsendingSocket = new DatagramSocket();
+        DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
+        while (running) {
             try {
-                DatagramSocket UCreceivingSocket = new DatagramSocket(Constants.UDP_PORT);
-                DatagramSocket UCsendingSocket = new DatagramSocket();
-                DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
-
-
+                System.out.println("ready to receive");
                 UCreceivingSocket.receive(receivingPack);
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
                 System.out.println(received);
@@ -133,26 +132,23 @@ public class NamingNode
                     System.out.println(received);
                     receivedAr = received.split(" ");
                     amountOfNodes = Integer.parseInt(receivedAr[0]);
-                    System.out.println("AoN: "+amountOfNodes);
+                    System.out.println("AoN: " + amountOfNodes);
                     if (amountOfNodes == 1) {
                         nextNodeID = thisNodeID;
                         previousNodeID = thisNodeID;
                         System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
-                    }
-                    else if(amountOfNodes > 1)
-                    {
-                        System.out.println("AoN: "+amountOfNodes);
+                    } else if (amountOfNodes > 1) {
+                        System.out.println("AoN: " + amountOfNodes);
                         fileReplicationRunning = true; //if there are more than 1 node in the network, start replicating
                         previousNodeID = Integer.parseInt(receivedAr[1]);
                         nextNodeID = Integer.parseInt(receivedAr[2]);
 
-                        if (previousNodeID.equals(nextNodeID)){
+                        if (previousNodeID.equals(nextNodeID)) {
                             nodeMessage = "pn " + thisNodeID;
                             UDPSend(UCsendingSocket, nodeMessage, stub.getIP(previousNodeID), Constants.UDP_PORT);
                             System.out.println(nodeMessage + " pn send");
 
-                        }
-                        else {
+                        } else {
                             nodeMessage = "p " + thisNodeID;
                             System.out.println("ip vorige : " + stub.getIP(previousNodeID));
                             UDPSend(UCsendingSocket, nodeMessage, stub.getIP(previousNodeID), Constants.UDP_PORT);
@@ -169,30 +165,31 @@ public class NamingNode
                         }
                     });
                     startUpThr.start();*/
-                    }
-                    else System.out.println("Error: amount of nodes smaller than 0!");
-                }
-                else //if from any other IP => node
+                    } else System.out.println("Error: amount of nodes smaller than 0!");
+                } else //if from any other IP => node
                 {
                     System.out.println(received + " goed aangekomen");
                     receivedAr = received.split(" ");
                     System.out.println(receivedAr);
-                    switch(receivedAr[0]) {
+                    switch (receivedAr[0]) {
                         case "p": //its a previous node message
                             previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
-                            if(!fileReplicationRunning) fileReplicationRunning = true; //there are two nodes in network, so start replicating
+                            if (!fileReplicationRunning)
+                                fileReplicationRunning = true; //there are two nodes in network, so start replicating
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                             break;
 
                         case "n": //its a next node message
                             nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
-                            if(!fileReplicationRunning) fileReplicationRunning = true; //there are two nodes in network, so start replicating
+                            if (!fileReplicationRunning)
+                                fileReplicationRunning = true; //there are two nodes in network, so start replicating
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                             break;
                         case "pn":
                             nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                             previousNodeID = Integer.valueOf(receivedAr[1]);
-                            if(!fileReplicationRunning) fileReplicationRunning = true; //there are two nodes in network, so start replicating
+                            if (!fileReplicationRunning)
+                                fileReplicationRunning = true; //there are two nodes in network, so start replicating
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                             break;
 
@@ -200,9 +197,11 @@ public class NamingNode
                             break;
                     }
                 }
-            }catch (Exception e) {}
-        //    shutdown(stub,thisNodeID,nextNodeID,previousNodeID);
-            //break;
+
+            } catch (Exception s) {
+                //    shutdown(stub,thisNodeID,nextNodeID,previousNodeID);
+                //break;
+            }
         }
     }
 
@@ -257,10 +256,12 @@ public class NamingNode
                 this.fileOwnerMap.put(listOfFiles[i].getName(), replicationNode);
 
                 //Start file upload, to replication node, in another thread
+
                 FileUploadHandler FUH = new FileUploadHandler(listOfFiles[i].getName(), stub.getIP(replicationNode));
                 FileUplHThr = new Thread(FUH);
                 FileUplHThr.start();
                 FileUplHThr.join();
+
             //}
         }
         System.out.println("FileRep Startup done!");
@@ -334,10 +335,12 @@ public class NamingNode
             UDPListener.start();
             fileReplicationStartup(stub);
 
-            //Check for changes in directory
+           /* //Check for changes in directory
             DirectoryWatcher DW = new DirectoryWatcher(stub);
             DirWatcherThr = new Thread(DW);
             DirWatcherThr.start();
+            */
+
 
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
