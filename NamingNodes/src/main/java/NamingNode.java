@@ -117,13 +117,12 @@ public class NamingNode
         boolean running = true;
 
         Thread startUpThr;
-        Thread FileDwnThr;
         while(running)
         {
             try {
                 DatagramSocket UCreceivingSocket = new DatagramSocket(Constants.UDP_PORT);
                 DatagramSocket UCsendingSocket = new DatagramSocket();
-                DatagramPacket receivingPack = new DatagramPacket(buf, buf.length, InetAddress.getByName(Constants.MULTICAST_IP), Constants.MULTICAST_PORT);
+                DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
 
 
                 UCreceivingSocket.receive(receivingPack);
@@ -197,14 +196,6 @@ public class NamingNode
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                             break;
 
-                        case "f": //its a message with filename
-                            UDPSend(UCsendingSocket,"ack",receivingPack.getAddress().toString(),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
-                            FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1]); //start TCP socket thread
-                            System.out.println("filename: "+receivedAr[1]);
-                            FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
-                            FileDwnThr.start();
-                            break;
-
                         default:
                             break;
                     }
@@ -212,6 +203,34 @@ public class NamingNode
             }catch (Exception e) {}
         //    shutdown(stub,thisNodeID,nextNodeID,previousNodeID);
             //break;
+        }
+    }
+
+    public void filenameListener() throws SocketException, IOException
+    {
+        String received;
+        String[] receivedAr;
+        byte buf[] = new byte[1024];
+        Thread FileDwnThr;
+        boolean running = true;
+
+        DatagramSocket filenameSocket = new DatagramSocket(Constants.UDPFileName_PORT);
+        DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
+
+        while(running)
+        {
+            filenameSocket.receive(receivingPack);
+            received = new String(receivingPack.getData(), 0, receivingPack.getLength());
+            receivedAr = received.split(" ");
+
+            if(receivedAr[0].equals("f"))
+            {
+                UDPSend(filenameSocket,"ack",receivingPack.getAddress().toString(),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
+                FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1]); //start TCP socket thread
+                System.out.println("filename: "+receivedAr[1]);
+                FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
+                FileDwnThr.start();
+            }
         }
     }
 
