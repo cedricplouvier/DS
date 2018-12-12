@@ -246,8 +246,9 @@ public class NamingNode
                 case "f":
                     File[] listOfFiles = Constants.localFileDirectory.listFiles();
                     for (int i = 0; i < listOfFiles.length; i++) {
-                        if (listOfFiles[i].isFile()) //if( !listOfFiles[i].isDirectory())
+                        if (listOfFiles[i].isFile())
                         {
+                            //if file is local on server, send it to your previous node
                             receivedAr[1].equals(listOfFiles[i]);
                             UDPSend(filenameSocket, "IP " + stub.getIP(previousNodeID)+receivedAr[1], receivingPack.getAddress().toString().replace("/",""), Constants.UDPFileName_PORT);
                             break;                                  //send back IP where it should be replicated and the filename

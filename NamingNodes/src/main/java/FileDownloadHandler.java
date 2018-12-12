@@ -54,18 +54,6 @@ public class FileDownloadHandler implements Runnable
             bos.write(mybytearray, 0 , current);
             bos.flush();
 
-            //if file is local on this server, start upload thread to previous node
-            File[] listOfFiles = Constants.localFileDirectory.listFiles();
-
-            for (int i = 0; i < listOfFiles.length; i++) {
-                if (listOfFiles[i].isFile() && listOfFiles[i].equals(filename))
-                {
-                    FileUploadHandler FUH = new FileUploadHandler(filename, previousIP, true);
-                    Thread FileUplHThr = new Thread(FUH);
-                    FileUplHThr.start();
-                }
-            }
-
         }catch(Exception e) {}
         try {
             if (fos != null) fos.close();
