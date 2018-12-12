@@ -60,7 +60,7 @@ public class FileDownloadHandler implements Runnable
             for (int i = 0; i < listOfFiles.length; i++) {
                 if (listOfFiles[i].isFile() && listOfFiles[i].equals(filename))
                 {
-                    FileUploadHandler FUH = new FileUploadHandler(filename, previousIP,filenameSocket, true);
+                    FileUploadHandler FUH = new FileUploadHandler(filename, previousIP, true);
                     Thread FileUplHThr = new Thread(FUH);
                     FileUplHThr.start();
                 }

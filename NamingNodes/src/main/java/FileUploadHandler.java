@@ -11,37 +11,34 @@ public class FileUploadHandler implements Runnable
     private String fullPath;
     private String ip;
     private Socket TCPsocket;
-    private DatagramSocket filenameSocket;
     private boolean deleteWhenDone = false;
+    private boolean ackReceived = false;
 
-    public FileUploadHandler(String filename, String ip, DatagramSocket filenameSocket)
+    public FileUploadHandler(String filename, String ip)
     {
         this.filename = filename;
         this.fullPath = directory + filename;
         this.ip = ip;
-        this.filenameSocket = filenameSocket;
     }
 
     //extra constructor for when file also needs to be deleted afterwards (replicationDir)
-    public FileUploadHandler(String filename, String ip, DatagramSocket filenameSocket, boolean deleteWhenDone)
+    public FileUploadHandler(String filename, String ip, boolean deleteWhenDone)
     {
         this.filename = filename;
         this.fullPath = directory + filename;
         this.ip = ip;
         this.deleteWhenDone = deleteWhenDone;
-        this.filenameSocket = filenameSocket;
     }
 
-    public void TCP()
+    public void startTCP()
     {
-
+        ackReceived = true;
     }
 
     public void run()
     {
         String deletePath;
         File deleteFile;
-        String received;
 
         FileInputStream fis = null;
         BufferedInputStream bis = null;
@@ -49,21 +46,6 @@ public class FileUploadHandler implements Runnable
         byte [] mybytearray = null;
 
         try{
-            //send filename first, so other node knows where to store
-            String fileMsg = "f " + filename;
-            byte[] UDPbuf = fileMsg.getBytes();
-            DatagramPacket UDPpacket = new DatagramPacket(UDPbuf, UDPbuf.length, InetAddress.getByName(ip), Constants.UDPFileName_PORT);
-            System.out.println("IP FUH" + ip);
-            filenameSocket.send(UDPpacket);
-            System.out.println("pakket sent");
-            do {
-                DatagramPacket receivingPack = new DatagramPacket(UDPbuf, UDPbuf.length, InetAddress.getByName(ip), Constants.UDPAck_PORT);
-                filenameSocket.receive(receivingPack);
-                received = new String(receivingPack.getData(), 0, receivingPack.getLength());
-                System.out.println("received: " + received);
-            }while(!received.equals("ack")); //wait for ack from downloader, to know he is receiving
-
-            System.out.println("ack received");
            //send file with TCP
             TCPsocket = new Socket(ip, Constants.TCP_FILE_PORT);
             File myFile = new File(fullPath);
