@@ -6,7 +6,6 @@ import java.net.Socket;
 
 public class FileUploadHandler implements Runnable
 {
-    private String directory = "/home....";
     private String filename;
     private String fullPath;
     private String ip;
@@ -17,7 +16,7 @@ public class FileUploadHandler implements Runnable
     public FileUploadHandler(String filename, String ip)
     {
         this.filename = filename;
-        this.fullPath = directory + filename;
+        this.fullPath = Constants.localFileDirectory.toString() +"/"+ filename;
         this.ip = ip;
     }
 
@@ -25,7 +24,7 @@ public class FileUploadHandler implements Runnable
     public FileUploadHandler(String filename, String ip, boolean deleteWhenDone)
     {
         this.filename = filename;
-        this.fullPath = directory + filename;
+        this.fullPath = Constants.localFileDirectory.toString() + "/" + filename;
         this.ip = ip;
         this.deleteWhenDone = deleteWhenDone;
     }
@@ -48,7 +47,9 @@ public class FileUploadHandler implements Runnable
         try{
            //send file with TCP
             TCPsocket = new Socket(ip, Constants.TCP_FILE_PORT);
+            System.out.println("socket made");
             File myFile = new File(fullPath);
+            mybytearray = new byte [(int)myFile.length()];
             fis = new FileInputStream(myFile);
             bis = new BufferedInputStream(fis);
         } catch (Exception e) {

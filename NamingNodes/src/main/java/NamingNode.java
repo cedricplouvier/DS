@@ -123,7 +123,7 @@ public class NamingNode
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
         while (running) {
             try {
-                System.out.println("ready to receive");
+                System.out.println("ready to receive amount of nodes");
                 UCreceivingSocket.receive(receivingPack);
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
                 System.out.println(received);
@@ -177,7 +177,7 @@ public class NamingNode
                 {
                     System.out.println(received + " goed aangekomen");
                     receivedAr = received.split(" ");
-                    System.out.println(receivedAr);
+                    //System.out.println(receivedAr);
                     switch (receivedAr[0])
                     {
                         case "p": //its a previous node message
@@ -245,6 +245,9 @@ public class NamingNode
             {
                 case "f":
                     File[] listOfFiles = Constants.localFileDirectory.listFiles();
+                    for (int i= 0;i<listOfFiles.length;i++){
+                        System.out.println(listOfFiles[i].getName());
+                    }
                     for (int i = 0; i < listOfFiles.length; i++) {
                         if (listOfFiles[i].isFile())
                         {
@@ -255,15 +258,17 @@ public class NamingNode
                         }
                     }
                     System.out.println(receivingPack.getAddress().toString());
-                    UDPSend(filenameSocket,"ack"+receivedAr[1],receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
+                    UDPSend(filenameSocket,"ack "+receivedAr[1],receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
                     System.out.println("ACK sent"); //send back ack and the filename
                     FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1], filenameSocket); //start TCP socket thread
                     System.out.println("filename: "+receivedAr[1]);
                     FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
                     FileDwnThr.start();
+                    FileDwnThr.join();
                     break;
 
                 case "ack":
+                    System.out.println("ack received");
                     uploadDone = false; //use this variable so other processes know when they can start new upload threads
                     FileUploadHandler FUH = new FileUploadHandler(receivedAr[1], receivingPack.getAddress().toString().replace("/",""));
                     FileUplHThr = new Thread(FUH);

@@ -14,6 +14,6 @@ public final class Constants
 
     public static final int TCP_FILE_PORT = 6789;
 
-    public static final File localFileDirectory = new File("/home/pi/Documents/local");
-    public static final File replicationFileDirectory = new File("/home/pi/Documents/replication");
+    public static final File localFileDirectory = new File("/home/pi/Documents/local/");
+    public static final File replicationFileDirectory = new File("/home/pi/Documents/replication/");
 }

@@ -32,11 +32,12 @@ public class FileDownloadHandler implements Runnable
         DatagramSocket UDPSocket;
 
         try{
-            fullPath = Constants.replicationFileDirectory + filename;
+            fullPath = Constants.replicationFileDirectory.toString() + "/" + filename;
 
             //Now receive the file
             TCPSsocket = new ServerSocket(Constants.TCP_FILE_PORT);
             TCPsocket = TCPSsocket.accept();
+            System.out.println("Socket made for "+filename);
 
             byte [] mybytearray  = new byte [6022386];
             InputStream is = TCPsocket.getInputStream();
@@ -53,13 +54,16 @@ public class FileDownloadHandler implements Runnable
 
             bos.write(mybytearray, 0 , current);
             bos.flush();
+            System.out.println(filename + " downloaded!");
 
         }catch(Exception e) {}
-        try {
-            if (fos != null) fos.close();
-            if (bos != null) bos.close();
-            if (TCPsocket != null) TCPsocket.close();
-            if (TCPSsocket != null) TCPSsocket.close();
-        }catch (Exception e){}
+        finally {
+            try {
+                if (fos != null) fos.close();
+                if (bos != null) bos.close();
+                if (TCPsocket != null) TCPsocket.close();
+                if (TCPSsocket != null) TCPSsocket.close();
+            }catch (Exception e){}
+        }
     }
 }
