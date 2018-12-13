@@ -18,7 +18,7 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 public class NamingNode
 {
-    private Integer thisNodeID;
+    public Integer thisNodeID;
     public Integer nextNodeID;
     private Integer previousNodeID;
     private int amountOfNodes = 0;
@@ -26,10 +26,13 @@ public class NamingNode
     private boolean uploadDone = true;
     private boolean discoveryRunning = true;
     private boolean fileListenerRunning = true;
+    private boolean fileAgentHandlerRunning = true;
     private static DatagramSocket filenameSocket = null;
+    private NamingInterface stub;
+    private Thread fileAgentThr;
 
 
-    private TreeMap<String,Integer> fileOwnerMap = new TreeMap<>(); //key is the filename, value is the nodeID it is stored on
+    public TreeMap<String,Integer> filenameMap = new TreeMap<>(); // filename - lock (on 1 - off 0)
 
     public NamingNode() {}
 
@@ -38,10 +41,31 @@ public class NamingNode
         return Math.abs(hostname.hashCode()) % 32768;
     }
 
+    //calculate port based on nodeID
     public int calculatePort(Integer nodeID)
     {
         String nodeIDStr = Integer.toString(nodeID);
         return 5000 + Math.abs(nodeIDStr.hashCode()) % 2000; //TCP port dependant on nodeID, ports between 5000 and 7000
+    }
+
+    //if user requests to download a file
+    public void downloadFile(String filename) throws IOException, InterruptedException
+    {
+        String locationIP;
+        Thread FileDwnThr;
+
+        if(filenameMap.get(filename) != 0) //if file isn't locked
+        {
+            filenameMap.put(filename, thisNodeID); //lock it with own nodeID
+        }
+        locationIP = stub.getIP(stub.fileLocator(filename)); //get location where file is stored (replicated)
+
+        UDPSend(filenameSocket,"ack "+filename,locationIP,Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
+        FileDownloadHandler FDH = new FileDownloadHandler(filename, calculatePort(stub.fileLocator(filename))); //start TCP socket thread
+        FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
+        FileDwnThr.start();
+        FileDwnThr.join();
+        filenameMap.put(filename, 0); //should be unlocked
     }
 
     //get the IP from nn node
@@ -64,7 +88,7 @@ public class NamingNode
     }
 
     //Shutdown protocol
-    public void shutdown(NamingInterface stub, Integer thisNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
+    public void shutdown(Integer thisNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
     {
         DatagramSocket sendingSocket = new DatagramSocket();
         Thread FileUplHThr;
@@ -87,10 +111,12 @@ public class NamingNode
                 do{
                     //nothing
                 }while(!uploadDone);
+                listOfFiles[i].delete(); //if upload done, delete
             }
         }
         discoveryRunning = false;
-        fileListenerRunning = false; //turn off remaining threads
+        fileListenerRunning = false;
+        fileAgentHandlerRunning = false; //turn off remaining threads
         stub.removeNode(thisNodeID); //remove node from IPMap on the server
     }
 
@@ -103,13 +129,17 @@ public class NamingNode
     }
 
     //Failure protocol
-    public void failure(Integer failedNode, final NamingInterface stub) throws IOException
+    public void failure(Integer failedNode) throws IOException
     {
         DatagramSocket UCsocket = new DatagramSocket(Constants.UDP_PORT);
         String receivedAr[] = stub.failure(failedNode).split(" ");
         //give previous node of the failed one, his new next node
         Integer previousNode = Integer.valueOf(receivedAr[0]);
         Integer nextNode = Integer.valueOf(receivedAr[1]);
+        if(previousNode == nextNode)
+        {
+            UDPSend(UCsocket, "pn "+previousNode, stub.getIP(previousNodeID), Constants.UDP_PORT);
+        }
         String nodeMessage = "n " + nextNode;
         UDPSend(UCsocket, nodeMessage, stub.getIP(previousNode), Constants.UDP_PORT);
         //give next node of the failed one, his new previous node
@@ -119,13 +149,13 @@ public class NamingNode
     }
 
     //Listens for UDP unicasts, from server or other nodes, with info over new nodes or when replication file needs to be downloaded
-    public void discovery(final NamingInterface stub) throws IOException, XMLStreamException {
+    public void discovery() throws IOException, XMLStreamException {
         String received;
         String[] receivedAr;
         byte buf[] = new byte[1024];
         String nodeMessage;
 
-        Thread startUpThr;
+        Thread updateUpThr;
         DatagramSocket UCreceivingSocket = new DatagramSocket(Constants.UDP_PORT);
         DatagramSocket UCsendingSocket = new DatagramSocket();
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
@@ -158,8 +188,7 @@ public class NamingNode
                         {
                             nodeMessage = "pn " + thisNodeID;
                             UDPSend(UCsendingSocket, nodeMessage, stub.getIP(previousNodeID), Constants.UDP_PORT);
-                            System.out.println(nodeMessage + " pn send");
-
+                            System.out.println(nodeMessage);
                         }
                         else
                         {
@@ -170,28 +199,28 @@ public class NamingNode
                             UDPSend(UCsendingSocket, nodeMessage, stub.getIP(nextNodeID), Constants.UDP_PORT);
                         }
                         System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
-
-                        startUpThr = new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try{ fileReplicationStartup(stub); }catch(Exception e) {}
-                            }
-                        });
-                        startUpThr.start();
+                        FileAgent fAgent = new FileAgent(this);
+                        fileAgentThr = new Thread(fAgent);
+                        fileAgentThr.start();
                     }
                     else System.out.println("Error: amount of nodes smaller than 0!");
                 }
                 else //if from any other IP => node
                 {
-                    System.out.println(received + " goed aangekomen");
                     receivedAr = received.split(" ");
                     //System.out.println(receivedAr);
                     switch (receivedAr[0])
                     {
                         case "p": //its a previous node message
                             previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
-                            fileReplicationUpdate(stub);
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
+                            updateUpThr = new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try{fileReplicationUpdate();} catch(Exception e){}
+                                }
+                            });
+                            updateUpThr.start();
                             break;
 
                         case "n": //its a next node message
@@ -203,6 +232,13 @@ public class NamingNode
                             nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                             previousNodeID = Integer.valueOf(receivedAr[1]);
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
+                            updateUpThr = new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try{fileReplicationUpdate();} catch(Exception e){}
+                                }
+                            });
+                            updateUpThr.start();
                             break;
 
                         default:
@@ -218,7 +254,7 @@ public class NamingNode
     }
 
     //listens to the specific filename port
-    public void filenameListener(NamingInterface stub) throws IOException, InterruptedException
+    public void filenameListener() throws IOException, InterruptedException
     {
         String received;
         String[] receivedAr;
@@ -276,18 +312,19 @@ public class NamingNode
     }
 
     //at startup, checks local directory for and send files to the correct replication node (happens once)
-    public void fileReplicationStartup(NamingInterface stub) throws IOException
+    public void fileReplicationStartup() throws IOException
     {
         Integer replicationNode;
 
         File[] listOfFiles = Constants.localFileDirectory.listFiles();
-        if(amountOfNodes == 1)
+        if(amountOfNodes == 1) //if only node in the network just copy files to own replication folder
         {
             for (int i = 0; i < listOfFiles.length; i++) {
                 System.out.println("a  " + listOfFiles[i]);
-                if (listOfFiles[i].isFile()) //if( !listOfFiles[i].isDirectory())
+                if (listOfFiles[i].isFile())
                 {
                     Files.copy(listOfFiles[i].toPath(), Paths.get(listOfFiles[i].toString().replace("local", "replication")));
+                    filenameMap.put(listOfFiles[i].toString().replace("/home/pi/Documents/local/",""), 0); //put filename in map and lock off
                 }
             }
         }
@@ -321,7 +358,7 @@ public class NamingNode
     }
 
     //gets called when previous node gets added, node checks if its replication files need to be stored on the new node
-    public void fileReplicationUpdate(NamingInterface stub) throws IOException
+    public void fileReplicationUpdate() throws IOException
     {
         Integer replicationNode;
 
@@ -342,10 +379,32 @@ public class NamingNode
                         do{
                             //nothing
                         }while(!uploadDone);
+                        listOfFiles[i].delete();
                     }
                 }
             }
         }
+    }
+
+    //only needed first time because thread is created in Discovery thread and this one can't wait for fileAgentThread to end. It needs to handle other incoming requests
+    public void fileAgentHandler()
+    {
+        while(fileAgentHandlerRunning)
+        {
+            if(!fileAgentThr.isAlive())
+            {
+                //send to next node
+                fileAgentHandlerRunning = false;
+            }
+        }
+    }
+
+    public void fileAgentReceiver(FileAgent fAgent) throws InterruptedException
+    {
+        fileAgentThr = new Thread(fAgent);
+        fileAgentThr.start();
+        fileAgentThr.join();
+        //send to next node
     }
 
     public void start()
@@ -355,13 +414,16 @@ public class NamingNode
         String ipString;
         String nameIP;
 
-        //Discovery
+        //Threads
         Thread UDPListener;
+        Thread startUpThr;
+        Thread filenameListenerThr;
+        final Thread fileAgentHandlerThr;
 
         try {
             //RMI
             Registry registry = LocateRegistry.getRegistry(Constants.SERVER_IP, 1099); //server IP and port
-            final NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
+            stub = (NamingInterface) registry.lookup("NamingInterface");
 
             //Bootstrap + Discovery
             File hostnameFile = new File("/home/pi/Documents/hostname.txt");
@@ -385,18 +447,34 @@ public class NamingNode
             UDPListener = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    try{discovery(stub);}catch(Exception e){}
+                    try{discovery();}catch(Exception e){}
                 }
             });
             UDPListener.start();
 
-            Thread filenameListenerThr = new Thread(new Runnable() {
+            filenameListenerThr = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    try{filenameListener(stub);}catch(Exception e){}
+                    try{filenameListener();}catch(Exception e){}
                 }
             });
             filenameListenerThr.start();
+
+            startUpThr = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try{ fileReplicationStartup(); }catch(Exception e) {}
+                }
+            });
+            startUpThr.start();
+
+            fileAgentHandlerThr = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    fileAgentHandler();
+                }
+            });
+            fileAgentHandlerThr.start();
 
            /* //Check for changes in directory
             DirectoryWatcher DW = new DirectoryWatcher(stub);

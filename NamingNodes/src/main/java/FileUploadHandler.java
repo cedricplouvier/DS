@@ -21,16 +21,6 @@ public class FileUploadHandler implements Runnable
         this.port = port;
     }
 
-    //extra constructor for when file also needs to be deleted afterwards (replicationDir)
-    public FileUploadHandler(String filename, String ip, int port, boolean deleteWhenDone)
-    {
-        this.filename = filename;
-        this.fullPath = Constants.localFileDirectory.toString() + "/" + filename;
-        this.ip = ip;
-        this.port = port;
-        this.deleteWhenDone = deleteWhenDone;
-    }
-
     public void run()
     {
         String deletePath;
