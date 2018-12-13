@@ -9,4 +9,5 @@ public interface NamingInterface extends Remote
     void removeNode(Integer nodeID) throws IOException, XMLStreamException;
     String getIP(Integer nodeID) throws RemoteException;
     String failure(Integer failedNode) throws RemoteException;
+    Integer getNodeID(String ip) throws RemoteException;
 }

@@ -3,6 +3,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.*;
 import java.rmi.RemoteException;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.Map;
 import java.rmi.registry.Registry;
@@ -10,9 +11,11 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.xml.stream.*;
 
+import static java.lang.Math.E;
+import static javafx.scene.input.KeyCode.T;
+
 public class NamingServer implements NamingInterface
 {
-
     public TreeMap<Integer, String> IPmap = new TreeMap<>();
     public TreeMap<Integer, Integer> fileOwnerMap = new TreeMap<>();
     String[] fileArray = {"Taak1.docx", "Song.mp3", "Uitgaven.xls", "loon.pdf", "readme.txt", "download.rar"};
@@ -139,8 +142,19 @@ public class NamingServer implements NamingInterface
     }
 
     //get the IP of a node in the system
-    public String getIP(Integer nodeID) throws RemoteException {
+    public String getIP(Integer nodeID)
+    {
         return this.IPmap.get(nodeID);
+    }
+
+    public Integer getNodeID(String ip)
+    {
+        for (Map.Entry<Integer, String> entry : this.IPmap.entrySet()) {
+            if (Objects.equals(ip, entry.getValue())) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     public void start() throws IOException {

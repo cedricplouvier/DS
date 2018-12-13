@@ -11,27 +11,24 @@ public class FileUploadHandler implements Runnable
     private String ip;
     private Socket TCPsocket;
     private boolean deleteWhenDone = false;
-    private boolean ackReceived = false;
+    private int port;
 
-    public FileUploadHandler(String filename, String ip)
+    public FileUploadHandler(String filename, String ip, int port)
     {
         this.filename = filename;
         this.fullPath = Constants.localFileDirectory.toString() +"/"+ filename;
         this.ip = ip;
+        this.port = port;
     }
 
     //extra constructor for when file also needs to be deleted afterwards (replicationDir)
-    public FileUploadHandler(String filename, String ip, boolean deleteWhenDone)
+    public FileUploadHandler(String filename, String ip, int port, boolean deleteWhenDone)
     {
         this.filename = filename;
         this.fullPath = Constants.localFileDirectory.toString() + "/" + filename;
         this.ip = ip;
+        this.port = port;
         this.deleteWhenDone = deleteWhenDone;
-    }
-
-    public void startTCP()
-    {
-        ackReceived = true;
     }
 
     public void run()
@@ -46,7 +43,7 @@ public class FileUploadHandler implements Runnable
 
         try{
            //send file with TCP
-            TCPsocket = new Socket(ip, Constants.TCP_FILE_PORT);
+            TCPsocket = new Socket(ip, port);
             System.out.println("socket made");
             File myFile = new File(fullPath);
             mybytearray = new byte [(int)myFile.length()];

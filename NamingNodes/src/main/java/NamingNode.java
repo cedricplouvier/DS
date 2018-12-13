@@ -21,10 +21,12 @@ public class NamingNode
     private Integer thisNodeID;
     public Integer nextNodeID;
     private Integer previousNodeID;
+    private int amountOfNodes = 0;
 
-    private static boolean fileReplicationRunning;
     private boolean uploadDone = true;
-    private static DatagramSocket filenameSocket= null;
+    private boolean discoveryRunning = true;
+    private boolean fileListenerRunning = true;
+    private static DatagramSocket filenameSocket = null;
 
 
     private TreeMap<String,Integer> fileOwnerMap = new TreeMap<>(); //key is the filename, value is the nodeID it is stored on
@@ -34,6 +36,12 @@ public class NamingNode
     public Integer calculateHash(String hostname)
     {
         return Math.abs(hostname.hashCode()) % 32768;
+    }
+
+    public int calculatePort(Integer nodeID)
+    {
+        String nodeIDStr = Integer.toString(nodeID);
+        return 5000 + Math.abs(nodeIDStr.hashCode()) % 2000; //TCP port dependant on nodeID, ports between 5000 and 7000
     }
 
     //get the IP from nn node
@@ -59,7 +67,6 @@ public class NamingNode
     public void shutdown(NamingInterface stub, Integer thisNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
     {
         DatagramSocket sendingSocket = new DatagramSocket();
-        File[] listOfFiles = Constants.replicationFileDirectory.listFiles();
         Thread FileUplHThr;
         String nextIP = stub.getIP(nextNodeID);
         String previousIP = stub.getIP(previousNodeID);
@@ -70,16 +77,20 @@ public class NamingNode
         sendingStr = "p " + previousNodeID;
         UDPSend(sendingSocket, sendingStr, nextIP, Constants.UDP_PORT);
 
+        File[] listOfFiles = Constants.replicationFileDirectory.listFiles();
         //send all files from replicationDir to the previous node and delete them, locally, when done
-        /*for (int i = 0; i < listOfFiles.length; i++)
+        for (int i = 0; i < listOfFiles.length; i++)
         {
             if (listOfFiles[i].isFile())
             {
-                FileUploadHandler FUH = new FileUploadHandler(listOfFiles[i].getName(), previousIP, true);
-                FileUplHThr = new Thread(FUH);
-                FileUplHThr.start();
+                UDPSend(filenameSocket, "f " + listOfFiles[i].getName(),stub.getIP(previousNodeID), Constants.UDPFileName_PORT); //upload will now be handles in filelistener() thread
+                do{
+                    //nothing
+                }while(!uploadDone);
             }
-        }*/
+        }
+        discoveryRunning = false;
+        fileListenerRunning = false; //turn off remaining threads
         stub.removeNode(thisNodeID); //remove node from IPMap on the server
     }
 
@@ -112,16 +123,14 @@ public class NamingNode
         String received;
         String[] receivedAr;
         byte buf[] = new byte[1024];
-        int amountOfNodes;
         String nodeMessage;
-        boolean running = true;
 
         Thread startUpThr;
-        Thread FileDwnThr;
         DatagramSocket UCreceivingSocket = new DatagramSocket(Constants.UDP_PORT);
         DatagramSocket UCsendingSocket = new DatagramSocket();
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
-        while (running) {
+        while (discoveryRunning)
+        {
             try {
                 System.out.println("ready to receive amount of nodes");
                 UCreceivingSocket.receive(receivingPack);
@@ -142,7 +151,6 @@ public class NamingNode
                     else if (amountOfNodes > 1)
                     {
                         System.out.println("AoN: " + amountOfNodes);
-                        fileReplicationRunning = true; //if there are more than 1 node in the network, start replicating
                         previousNodeID = Integer.parseInt(receivedAr[1]);
                         nextNodeID = Integer.parseInt(receivedAr[2]);
 
@@ -182,30 +190,19 @@ public class NamingNode
                     {
                         case "p": //its a previous node message
                             previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
-                            if (!fileReplicationRunning)
-                                fileReplicationRunning = true; //there are two nodes in network, so start replicating
+                            fileReplicationUpdate(stub);
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                             break;
 
                         case "n": //its a next node message
                             nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
-                            if (!fileReplicationRunning)
-                                fileReplicationRunning = true; //there are two nodes in network, so start replicating
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
                             break;
-                        case "pn":
+
+                        case "pn": //next and previous node are the same (amount of nodes = 2)
                             nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                             previousNodeID = Integer.valueOf(receivedAr[1]);
-                            if (!fileReplicationRunning)
-                                fileReplicationRunning = true; //there are two nodes in network, so start replicating
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
-                            startUpThr = new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try{ fileReplicationStartup(stub); }catch(Exception e) {}
-                                }
-                            });
-                            startUpThr.start();
                             break;
 
                         default:
@@ -227,12 +224,12 @@ public class NamingNode
         String[] receivedAr;
         byte buf[] = new byte[1024];
         Thread FileDwnThr;
-        boolean running = true;
         Thread FileUplHThr;
+        Integer sendingNode;
 
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
 
-        while(running)
+        while(fileListenerRunning)
         {
             System.out.println("ready to receive file");
             filenameSocket.receive(receivingPack);
@@ -244,42 +241,37 @@ public class NamingNode
             switch(receivedAr[0])
             {
                 case "f":
+                    System.out.println(receivingPack.getAddress().toString());
+                    UDPSend(filenameSocket,"ack "+receivedAr[1],receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
+                    System.out.println("ACK sent"); //send back ack and the filename
+                    sendingNode = stub.getNodeID(receivingPack.getAddress().toString().replace("/",""));
+                    FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1], calculatePort(sendingNode)); //start TCP socket thread
+                    System.out.println("filename: "+receivedAr[1]);
+                    FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
+                    FileDwnThr.start();
+                    FileDwnThr.join();
                     File[] listOfFiles = Constants.localFileDirectory.listFiles();
-                    for (int i= 0;i<listOfFiles.length;i++){
-                        System.out.println(listOfFiles[i].getName());
-                    }
                     for (int i = 0; i < listOfFiles.length; i++) {
                         if (listOfFiles[i].isFile())
                         {
                             //if file is local on server, send it to your previous node
                             receivedAr[1].equals(listOfFiles[i]);
-                            UDPSend(filenameSocket, "IP " + stub.getIP(previousNodeID)+receivedAr[1], receivingPack.getAddress().toString().replace("/",""), Constants.UDPFileName_PORT);
-                            break;                                  //send back IP where it should be replicated and the filename
+                            UDPSend(filenameSocket, "f " + receivedAr[1], stub.getIP(previousNodeID), Constants.UDPFileName_PORT);
                         }
                     }
-                    System.out.println(receivingPack.getAddress().toString());
-                    UDPSend(filenameSocket,"ack "+receivedAr[1],receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
-                    System.out.println("ACK sent"); //send back ack and the filename
-                    FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1], filenameSocket); //start TCP socket thread
-                    System.out.println("filename: "+receivedAr[1]);
-                    FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
-                    FileDwnThr.start();
-                    FileDwnThr.join();
                     break;
 
                 case "ack":
                     System.out.println("ack received");
                     uploadDone = false; //use this variable so other processes know when they can start new upload threads
-                    FileUploadHandler FUH = new FileUploadHandler(receivedAr[1], receivingPack.getAddress().toString().replace("/",""));
+
+                    FileUploadHandler FUH = new FileUploadHandler(receivedAr[1], receivingPack.getAddress().toString().replace("/",""), calculatePort(thisNodeID));
                     FileUplHThr = new Thread(FUH);
                     FileUplHThr.start();
                     FileUplHThr.join();
                     uploadDone = true;
                     break;
-
-                case "IP":
-                    UDPSend(filenameSocket, "f " + receivedAr[2], receivedAr[1], Constants.UDPFileName_PORT); //should be replicated to new node, so send out new f request
-            }                                                                                                          //and wait for ack
+            }
         }
     }
 
@@ -289,28 +281,40 @@ public class NamingNode
         Integer replicationNode;
 
         File[] listOfFiles = Constants.localFileDirectory.listFiles();
-        for (int i = 0; i < listOfFiles.length; i++)
+        if(amountOfNodes == 1)
         {
-            System.out.println("a  " + listOfFiles[i]);
-            if (listOfFiles[i].isFile()) //if( !listOfFiles[i].isDirectory())
-            {
-                //determine node where the replicated file will be stored
-                if((stub.fileLocator(listOfFiles[i].getName())).equals(thisNodeID)) //if replication node is the current node
+            for (int i = 0; i < listOfFiles.length; i++) {
+                System.out.println("a  " + listOfFiles[i]);
+                if (listOfFiles[i].isFile()) //if( !listOfFiles[i].isDirectory())
                 {
-                    System.out.println("zelfde ID");
-                    replicationNode = previousNodeID; //replication will be on the previous node
+                    Files.copy(listOfFiles[i].toPath(), Paths.get(listOfFiles[i].toString().replace("local", "replication")));
                 }
-                else replicationNode = stub.fileLocator(listOfFiles[i].getName()); //ask NameServer on which node it should be stored
+            }
+        }
+        else
+        {
+            for (int i = 0; i < listOfFiles.length; i++)
+            {
+                System.out.println("a  " + listOfFiles[i]);
+                if (listOfFiles[i].isFile()) //if( !listOfFiles[i].isDirectory())
+                {
+                    //determine node where the replicated file will be stored
+                    if((stub.fileLocator(listOfFiles[i].getName())).equals(thisNodeID)) //if replication node is the current node
+                    {
+                        System.out.println("zelfde ID");
+                        replicationNode = previousNodeID; //replication will be on the previous node
+                    }
+                    else replicationNode = stub.fileLocator(listOfFiles[i].getName()); //ask NameServer on which node it should be stored
 
-                System.out.println(replicationNode);
-                this.fileOwnerMap.put(listOfFiles[i].getName(), replicationNode);
+                    System.out.println(replicationNode);
 
-                //Start file upload, to replication node, in another thread
+                    //Start file upload, to replication node, in another thread
 
-                UDPSend(filenameSocket, "f " + listOfFiles[i].getName(),stub.getIP(replicationNode), Constants.UDPFileName_PORT);
-                do{
-                    //nothing
-                }while(!uploadDone);
+                    UDPSend(filenameSocket, "f " + listOfFiles[i].getName(),stub.getIP(replicationNode), Constants.UDPFileName_PORT); //upload will now be handles in filelistener() thread
+                    do{
+                        //nothing
+                    }while(!uploadDone);
+                }
             }
         }
         System.out.println("FileRep Startup done!");
@@ -320,7 +324,6 @@ public class NamingNode
     public void fileReplicationUpdate(NamingInterface stub) throws IOException
     {
         Integer replicationNode;
-        Thread FileUplHThr;
 
         File[] listOfFiles = Constants.replicationFileDirectory.listFiles();
         for (int i = 0; i < listOfFiles.length; i++)
@@ -331,10 +334,15 @@ public class NamingNode
                 if(!(stub.fileLocator(listOfFiles[i].getName())).equals(thisNodeID))
                 {
                     //upload to other node and gets deleted on nn one
-                    replicationNode = stub.fileLocator(listOfFiles[i].getName());
-                   // FileUploadHandler FUH = new FileUploadHandler(listOfFiles[i].getName(), stub.getIP(replicationNode), filenameSocket,true);
-                   // FileUplHThr = new Thread(FUH);
-                    //FileUplHThr.start();
+                    if(uploadDone)
+                    {
+                        replicationNode = stub.fileLocator(listOfFiles[i].getName());
+
+                        UDPSend(filenameSocket, "f " + listOfFiles[i].getName(),stub.getIP(replicationNode), Constants.UDPFileName_PORT); //upload will now be handles in filelistener() thread
+                        do{
+                            //nothing
+                        }while(!uploadDone);
+                    }
                 }
             }
         }
@@ -350,19 +358,16 @@ public class NamingNode
         //Discovery
         Thread UDPListener;
 
-        //File replication
-        fileReplicationRunning = false;
-        Thread DirWatcherThr;
-
-
         try {
             //RMI
             Registry registry = LocateRegistry.getRegistry(Constants.SERVER_IP, 1099); //server IP and port
             final NamingInterface stub = (NamingInterface) registry.lookup("NamingInterface");
 
             //Bootstrap + Discovery
+            File hostnameFile = new File("/home/pi/Documents/hostname.txt");
+            BufferedReader BR = new BufferedReader(new FileReader(hostnameFile));
+            hostname = BR.readLine();
             ipString = this.getThisIP().getHostAddress(); // InetAddress to string
-            hostname = "Node" + ipString.substring(10); //hostname dependant on last digit of IP
             thisNodeID = calculateHash(hostname);
 
             //Multicast send IP + hostname to all
@@ -384,6 +389,7 @@ public class NamingNode
                 }
             });
             UDPListener.start();
+
             Thread filenameListenerThr = new Thread(new Runnable() {
                 @Override
                 public void run() {

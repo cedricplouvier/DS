@@ -4,38 +4,29 @@ import java.net.*;
 public class FileDownloadHandler implements Runnable
 {
     private String filename;
-    private String previousIP;
-    private DatagramSocket filenameSocket;
+    private int port;
 
-    public FileDownloadHandler(String filename, DatagramSocket filenameSocket)
+    public FileDownloadHandler(String filename, int port)
     {
         this.filename = filename;
-        this.filenameSocket = filenameSocket;
-    }
-
-    public FileDownloadHandler(String filename, String previousIP, DatagramSocket filenameSocket)
-    {
-        this.filename = filename;
-        this.previousIP = previousIP;
-        this.filenameSocket = filenameSocket;
+        this.port = port;
     }
 
     public void run()
     {
         int bytesRead;
-        int current = 0;
+        int current;
         String fullPath;
         FileOutputStream fos = null;
         BufferedOutputStream bos = null;
         Socket TCPsocket = null;
         ServerSocket TCPSsocket = null;
-        DatagramSocket UDPSocket;
 
         try{
             fullPath = Constants.replicationFileDirectory.toString() + "/" + filename;
 
             //Now receive the file
-            TCPSsocket = new ServerSocket(Constants.TCP_FILE_PORT);
+            TCPSsocket = new ServerSocket(port);
             TCPsocket = TCPSsocket.accept();
             System.out.println("Socket made for "+filename);
 
