@@ -4,12 +4,12 @@ import java.io.Serializable;
 public class FailureAgent implements Runnable, Serializable
 {
     private Integer failedNode;
-    private Integer thisNodeID;
+    private Integer startNodeID;
 
     public FailureAgent(Integer failedNode, Integer thisNodeID)
     {
         this.failedNode = failedNode;
-        this.thisNodeID = thisNodeID;
+        startNodeID = thisNodeID;
     }
 
     public void run()
@@ -18,9 +18,11 @@ public class FailureAgent implements Runnable, Serializable
         {
             for (int i = 0; i < listOfFiles.length; i++) {
                 if (listOfFiles[i].isFile()) {
-
+                    //is already handled by fileReplicationThread
                 }
             }
         }
     }
+
+    public Integer getstartNodeID() {return startNodeID;}
 }

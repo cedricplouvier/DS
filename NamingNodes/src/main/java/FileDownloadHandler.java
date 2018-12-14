@@ -1,15 +1,20 @@
 import java.io.*;
 import java.net.*;
+import java.rmi.Naming;
 
 public class FileDownloadHandler implements Runnable
 {
     private String filename;
     private int port;
+    private NamingNode node;
+    private Integer nodeID;
 
-    public FileDownloadHandler(String filename, int port)
+    public FileDownloadHandler(String filename, int port, NamingNode node, Integer nodeID)
     {
         this.filename = filename;
         this.port = port;
+        this.node = node;
+        this.nodeID = nodeID;
     }
 
     public void run()
@@ -22,14 +27,17 @@ public class FileDownloadHandler implements Runnable
         Socket TCPsocket = null;
         ServerSocket TCPSsocket = null;
 
-        try{
-            fullPath = Constants.replicationFileDirectory.toString() + "/" + filename;
-
+        fullPath = Constants.replicationFileDirectory.toString() + "/" + filename;
+        try {
             //Now receive the file
             TCPSsocket = new ServerSocket(port);
             TCPsocket = TCPSsocket.accept();
-            System.out.println("Socket made for "+filename);
-
+            System.out.println("Socket made for " + filename);
+        }catch(IOException ie)
+        {
+            try {node.failure(nodeID);}catch(Exception e) {}
+        }
+        try{
             byte [] mybytearray  = new byte [6022386];
             InputStream is = TCPsocket.getInputStream();
             fos = new FileOutputStream(fullPath);

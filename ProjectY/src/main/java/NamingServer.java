@@ -11,9 +11,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.xml.stream.*;
 
-import static java.lang.Math.E;
-import static javafx.scene.input.KeyCode.T;
-
 public class NamingServer implements NamingInterface {
     public TreeMap<Integer, String> IPmap = new TreeMap<>();
     public TreeMap<Integer, Integer> fileOwnerMap = new TreeMap<>();
