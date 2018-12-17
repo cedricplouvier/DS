@@ -206,19 +206,30 @@ public class NamingNode implements AgentInterface
         DatagramSocket UCreceivingSocket = new DatagramSocket(Constants.UDP_PORT);
         DatagramSocket UCsendingSocket = new DatagramSocket();
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
+
+        System.out.println("Discovery started");
         while (discoveryRunning)
         {
             try {
-                System.out.println("ready to receive amount of nodes");
+                System.out.println("ready to receive discovery UDP");
                 UCreceivingSocket.receive(receivingPack);
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
-                System.out.println(received);
+                System.out.println("received: " + received);
                 if (receivingPack.getAddress().toString().equals("/192.168.0.4")) //if from server IP
                 {
-                    System.out.println(received);
                     receivedAr = received.split(" ");
                     amountOfNodes = Integer.parseInt(receivedAr[0]);
                     System.out.println("AoN: " + amountOfNodes);
+
+                    Thread fillFilenameMapThr = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            fillFilenameMap();
+                        }
+                    });
+                    fillFilenameMapThr.start();
+                    fillFilenameMapThr.join();
+
                     if (amountOfNodes == 1)
                     {
                         nextNodeID = thisNodeID;
@@ -246,6 +257,15 @@ public class NamingNode implements AgentInterface
                             UDPSend(UCsendingSocket, nodeMessage, namingServer.getIP(nextNodeID), Constants.UDP_PORT);
                         }
                         System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
+
+                        Thread startUpThr = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try{ fileReplicationStartup(); }catch(Exception e) {}
+                            }
+                        });
+                        startUpThr.start();
+
                         Thread fileAgentHandlerThr = new Thread(new Runnable() {
                             @Override
                             public void run() {
@@ -311,13 +331,14 @@ public class NamingNode implements AgentInterface
                             nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                             previousNodeID = Integer.valueOf(receivedAr[1]);
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
-                            updateUpThr = new Thread(new Runnable() {
+
+                            Thread startUpThr = new Thread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    try{fileReplicationUpdate();} catch(Exception e){}
+                                    try{ fileReplicationStartup(); }catch(Exception e) {}
                                 }
                             });
-                            updateUpThr.start();
+                            startUpThr.start();
                             break;
 
                         default:
@@ -367,10 +388,10 @@ public class NamingNode implements AgentInterface
                     FileDwnThr.join();
                     File[] listOfFiles = Constants.localFileDirectory.listFiles();
                     for (int i = 0; i < listOfFiles.length; i++) {
-                        if (listOfFiles[i].isFile())
+                        if (listOfFiles[i].isFile() && receivedAr[1].equals(listOfFiles[i]))
                         {
+                            System.out.println("file is local!");
                             //if file is local on server, send it to your previous node
-                            receivedAr[1].equals(listOfFiles[i]);
                             UDPSend(filenameSocket, "f " + receivedAr[1], namingServer.getIP(previousNodeID), Constants.UDPFileName_PORT);
                         }
                     }
@@ -381,6 +402,7 @@ public class NamingNode implements AgentInterface
                     uploadDone = false; //use this variable so other processes know when they can start new upload threads
                     sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
 
+                    System.out.println(receivedAr[1]);
                     FileUploadHandler FUH = new FileUploadHandler(receivedAr[1], receivingPack.getAddress().toString().replace("/",""), calculatePort(thisNodeID), this, sendingNode);
                     FileUplHThr = new Thread(FUH);
                     FileUplHThr.start();
@@ -397,18 +419,7 @@ public class NamingNode implements AgentInterface
         Integer replicationNode;
 
         File[] listOfFiles = Constants.localFileDirectory.listFiles();
-        if(amountOfNodes == 1) //if only node in the network just copy files to own replication folder
-        {
-            for (int i = 0; i < listOfFiles.length; i++) {
-                System.out.println("a  " + listOfFiles[i]);
-                if (listOfFiles[i].isFile())
-                {
-                    Files.copy(listOfFiles[i].toPath(), Paths.get(listOfFiles[i].toString().replace("local", "replication")));
-                    this.filenameMap.put(listOfFiles[i].toString().replace("C:\\Users\\Public\\test\\local\\",""), new FileProperties(0, true, thisNodeID)); //put filename in map and lock off
-                }
-            }
-        }
-        else
+        if(amountOfNodes > 1)
         {
             for (int i = 0; i < listOfFiles.length; i++)
             {
@@ -441,6 +452,7 @@ public class NamingNode implements AgentInterface
     public void fileReplicationUpdate() throws IOException
     {
         Integer replicationNode;
+        System.out.println("repUpdate");
 
         File[] listOfFiles = Constants.replicationFileDirectory.listFiles();
         for (int i = 0; i < listOfFiles.length; i++)
@@ -471,6 +483,17 @@ public class NamingNode implements AgentInterface
         String ip = namingServer.getIP(namingServer.fileLocator(filename));
         UDPSend(filenameSocket, "f "+filename, ip, Constants.UDPFileName_PORT);
         this.filenameMap.put(filename, new FileProperties(0, true, thisNodeID));
+    }
+
+    public void fillFilenameMap()
+    {
+        File[] listOfFiles = Constants.localFileDirectory.listFiles();
+        for (int i = 0; i < listOfFiles.length; i++)
+        {
+            if (listOfFiles[i].isFile()) {
+                this.filenameMap.put(listOfFiles[i].toString().replace("C:\\Program Files\\test\\local\\",""), new FileProperties(0,true,thisNodeID));
+            }
+        }
     }
 
     //only needed first time because thread is created in Discovery thread and this one can't wait for fileAgentThread to end. It needs to handle other incoming requests
@@ -550,9 +573,10 @@ public class NamingNode implements AgentInterface
             namingServer = (NamingInterface) registry.lookup("NamingInterface");
 
             //Bootstrap + Discovery
-            File hostnameFile = new File("C:\\Users\\Public\\test\\hostname.txt");
+            File hostnameFile = new File("C:\\Program Files\\test\\hostname.txt");
             BufferedReader BR = new BufferedReader(new FileReader(hostnameFile));
             hostname = BR.readLine();
+            System.out.println(hostname + "hostname");
             ipString = this.getThisIP().getHostAddress(); // InetAddress to string
             thisNodeID = calculateHash(hostname);
 
@@ -586,21 +610,7 @@ public class NamingNode implements AgentInterface
             });
             filenameListenerThr.start();
 
-            startUpThr = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try{ fileReplicationStartup(); }catch(Exception e) {}
-                }
-            });
-            startUpThr.start();
 
-            fileAgentHandlerThr = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    fileAgentHandler();
-                }
-            });
-            fileAgentHandlerThr.start();
 
            /* //Check for changes in directory
             DirectoryWatcher DW = new DirectoryWatcher(namingServer);

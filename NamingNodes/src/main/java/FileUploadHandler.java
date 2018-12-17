@@ -3,7 +3,6 @@ import java.net.*;
 
 public class FileUploadHandler implements Runnable
 {
-    private String filename;
     private String fullPath;
     private String ip;
     private Socket TCPsocket;
@@ -14,7 +13,6 @@ public class FileUploadHandler implements Runnable
 
     public FileUploadHandler(String filename, String ip, int port, NamingNode node, Integer nodeID)
     {
-        this.filename = filename;
         this.fullPath = Constants.localFileDirectory.toString() +"\\"+ filename;
         this.ip = ip;
         this.port = port;
@@ -32,7 +30,7 @@ public class FileUploadHandler implements Runnable
         try {
             //send file with TCP
             TCPsocket = new Socket(ip, port);
-            System.out.println("socket made");
+            System.out.println("socket made " + port);
         }catch (IOException e)
         {
             try {node.failure(nodeID);}catch(Exception fe) {}

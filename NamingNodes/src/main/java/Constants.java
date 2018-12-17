@@ -11,6 +11,6 @@ public final class Constants
     public static final int UDPFileName_PORT = 4200;
     public static final int UDP_PORT = 4900;
 
-    public static final File localFileDirectory = new File("C:\\Users\\Public\\test\\local");
-    public static final File replicationFileDirectory = new File("C:\\Users\\Public\\test\\fileRep");
+    public static final File localFileDirectory = new File("C:\\Program Files\\test\\local");
+    public static final File replicationFileDirectory = new File("C:\\Program Files\\test\\fileRep");
 }
