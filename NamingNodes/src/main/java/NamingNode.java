@@ -510,19 +510,6 @@ public class NamingNode implements AgentInterface
             Registry registry = LocateRegistry.getRegistry(Constants.SERVER_IP, 1099); //server IP and port
             namingServer = (NamingInterface) registry.lookup("NamingInterface");
 
-            //Next node RMI (your server)
-            rmiStr = Integer.toString(nextNodeID);
-            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
-            registry = LocateRegistry.getRegistry(namingServer.getIP(nextNodeID), rmiPort);
-            rmiNextNode = (AgentInterface) registry.lookup("AgentInterface");
-
-            //Previous node RMI (your client)
-            rmiStr = Integer.toString(thisNodeID);
-            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
-            rmiPreviousNode = (AgentInterface) UnicastRemoteObject.exportObject(this, 0);
-            registry = LocateRegistry.createRegistry(rmiPort);
-            registry.bind("AgentInterface", rmiPreviousNode);
-
             //Bootstrap + Discovery
             File hostnameFile = new File("/home/pi/Documents/hostname.txt");
             BufferedReader BR = new BufferedReader(new FileReader(hostnameFile));
@@ -540,6 +527,19 @@ public class NamingNode implements AgentInterface
             //bootstrap message
             nameIP = "b " + ipString + " " + hostname;
             this.UDPSend(MCSocket, nameIP, Constants.MULTICAST_IP, Constants.MULTICAST_PORT);
+
+            //Next node RMI (your server)
+            rmiStr = Integer.toString(nextNodeID);
+            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
+            registry = LocateRegistry.getRegistry(namingServer.getIP(nextNodeID), rmiPort);
+            rmiNextNode = (AgentInterface) registry.lookup("AgentInterface");
+
+            //Previous node RMI (your client)
+            rmiStr = Integer.toString(thisNodeID);
+            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
+            rmiPreviousNode = (AgentInterface) UnicastRemoteObject.exportObject(this, 0);
+            registry = LocateRegistry.createRegistry(rmiPort);
+            registry.bind("AgentInterface", rmiPreviousNode);
 
             //Create threads for incoming UDP unicast messages
             UDPListener = new Thread(new Runnable() {
