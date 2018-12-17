@@ -15,7 +15,7 @@ public class FileUploadHandler implements Runnable
     public FileUploadHandler(String filename, String ip, int port, NamingNode node, Integer nodeID)
     {
         this.filename = filename;
-        this.fullPath = Constants.localFileDirectory.toString() +"/"+ filename;
+        this.fullPath = Constants.localFileDirectory.toString() +"\\"+ filename;
         this.ip = ip;
         this.port = port;
         this.node = node;
