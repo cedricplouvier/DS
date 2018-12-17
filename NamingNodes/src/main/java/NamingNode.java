@@ -197,6 +197,10 @@ public class NamingNode implements AgentInterface
         String[] receivedAr;
         byte buf[] = new byte[1024];
         String nodeMessage;
+        int rmiPort;
+        String rmiStr;
+        Registry registry;
+        AgentInterface rmiPreviousNode;
 
         Thread updateUpThr;
         DatagramSocket UCreceivingSocket = new DatagramSocket(Constants.UDP_PORT);
@@ -247,6 +251,19 @@ public class NamingNode implements AgentInterface
                         fileAgentThr.start();
                     }
                     else System.out.println("Error: amount of nodes smaller than 0!");
+
+                    //Next node RMI (your server)
+                    rmiStr = Integer.toString(nextNodeID);
+                    rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
+                    registry = LocateRegistry.getRegistry(namingServer.getIP(nextNodeID), rmiPort);
+                    rmiNextNode = (AgentInterface) registry.lookup("AgentInterface");
+
+                    //Previous node RMI (your client)
+                    rmiStr = Integer.toString(thisNodeID);
+                    rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
+                    rmiPreviousNode = (AgentInterface) UnicastRemoteObject.exportObject(this, 0);
+                    registry = LocateRegistry.createRegistry(rmiPort);
+                    registry.bind("AgentInterface", rmiPreviousNode);
                 }
                 else //if from any other IP => node
                 {
@@ -264,11 +281,26 @@ public class NamingNode implements AgentInterface
                                 }
                             });
                             updateUpThr.start();
+
+                            //Previous node RMI (your client)
+                            rmiStr = Integer.toString(thisNodeID);
+                            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
+                            rmiPreviousNode = (AgentInterface) UnicastRemoteObject.exportObject(this, 0);
+                            registry = LocateRegistry.createRegistry(rmiPort);
+                            registry.bind("AgentInterface", rmiPreviousNode);
+
                             break;
 
                         case "n": //its a next node message
                             nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
+
+                            //Next node RMI (your server)
+                            rmiStr = Integer.toString(nextNodeID);
+                            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
+                            registry = LocateRegistry.getRegistry(namingServer.getIP(nextNodeID), rmiPort);
+                            rmiNextNode = (AgentInterface) registry.lookup("AgentInterface");
+
                             break;
 
                         case "pn": //next and previous node are the same (amount of nodes = 2)
@@ -528,18 +560,7 @@ public class NamingNode implements AgentInterface
             nameIP = "b " + ipString + " " + hostname;
             this.UDPSend(MCSocket, nameIP, Constants.MULTICAST_IP, Constants.MULTICAST_PORT);
 
-            //Next node RMI (your server)
-            rmiStr = Integer.toString(nextNodeID);
-            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
-            registry = LocateRegistry.getRegistry(namingServer.getIP(nextNodeID), rmiPort);
-            rmiNextNode = (AgentInterface) registry.lookup("AgentInterface");
 
-            //Previous node RMI (your client)
-            rmiStr = Integer.toString(thisNodeID);
-            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
-            rmiPreviousNode = (AgentInterface) UnicastRemoteObject.exportObject(this, 0);
-            registry = LocateRegistry.createRegistry(rmiPort);
-            registry.bind("AgentInterface", rmiPreviousNode);
 
             //Create threads for incoming UDP unicast messages
             UDPListener = new Thread(new Runnable() {
