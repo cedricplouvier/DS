@@ -120,10 +120,10 @@ public class NamingServer implements NamingInterface {
         return null;
     }
 
-    public void nodeHandler(DatagramPacket MCpacket) throws IOException, XMLStreamException
+    /*public void nodeHandler(DatagramPacket MCpacket) throws IOException, XMLStreamException
     {
         DatagramPacket UCpacket;
-        byte UCbuf[] = new byte[1024];
+        byte UCbuf[];
         String received;
         String[] receivedAr;
         Integer previous;
@@ -131,7 +131,7 @@ public class NamingServer implements NamingInterface {
         String bootstrapReturnMsg = null;
         DatagramSocket UCsendingSocket = new DatagramSocket();
 
-        received = new String(MCpacket.getData(), 0, MCpacket.getLength());
+
         receivedAr = received.split(" ");
         addNode(receivedAr[2], receivedAr[1]); //add node with hostname and IP sent with UDP multicast
         System.out.println("map size: " + this.IPmap.size());
@@ -160,7 +160,7 @@ public class NamingServer implements NamingInterface {
         UCbuf = bootstrapReturnMsg.getBytes();
         UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 4446); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
         UCsendingSocket.send(UCpacket);
-    }
+    }*/
 
     public void start() throws IOException {
         byte MCbuf[] = new byte[1024];
@@ -168,6 +168,7 @@ public class NamingServer implements NamingInterface {
         boolean running = true;
         MulticastSocket MCreceivingSocket = null;
         Thread nodeHandlerThr;
+        String received;
 
         try {
             //RMI
@@ -188,12 +189,9 @@ public class NamingServer implements NamingInterface {
             while (running) {
                 MCpacket.setData(new byte[1024]);
                 MCreceivingSocket.receive(MCpacket);
-                nodeHandlerThr = new Thread(new Runnable() { //start thread per received packet
-                    @Override
-                    public void run() {
-                        try{nodeHandler(MCpacket);}catch(Exception e){}
-                    }
-                });
+                received = new String(MCpacket.getData(), 0, MCpacket.getLength());
+                NodeHandler NH = new NodeHandler(this,received);
+                nodeHandlerThr = new Thread(NH);
                 nodeHandlerThr.start();
             }
         } catch (Exception e) {
