@@ -246,9 +246,13 @@ public class NamingNode implements AgentInterface
                             UDPSend(UCsendingSocket, nodeMessage, namingServer.getIP(nextNodeID), Constants.UDP_PORT);
                         }
                         System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
-                        FileAgent fileAgent = new FileAgent(this);
-                        fileAgentThr = new Thread(fileAgent);
-                        fileAgentThr.start();
+                        Thread fileAgentHandlerThr = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try{ fileAgentHandler(); }catch(Exception e) {}
+                            }
+                        });
+                        fileAgentHandlerThr.start();
                     }
                     else System.out.println("Error: amount of nodes smaller than 0!");
 
@@ -472,13 +476,16 @@ public class NamingNode implements AgentInterface
     //only needed first time because thread is created in Discovery thread and this one can't wait for fileAgentThread to end. It needs to handle other incoming requests
     public void fileAgentHandler()
     {
-        while(fileAgentHandlerRunning)
+        try{
+            FileAgent fileAgent = new FileAgent(this);
+            fileAgentThr = new Thread(fileAgent);
+            fileAgentThr.start();
+            fileAgentThr.join();
+            //send to next node
+            rmiNextNode.fileAgentReceiver(fileAgent);
+        }catch(Exception re)
         {
-            if(!fileAgentThr.isAlive())
-            {
-                //send to next node
-                fileAgentHandlerRunning = false;
-            }
+            try {failure(nextNodeID);}catch(Exception e) {}
         }
     }
 
