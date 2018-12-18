@@ -51,8 +51,11 @@ public class NodeHandler implements Runnable
                 bootstrapReturnMsg = Integer.toString(node.IPmap.size()) + " " + Integer.toString(previous)+ " " + Integer.toString(next);
             }
             UCbuf = bootstrapReturnMsg.getBytes();
-            UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 4446); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
+
+            UCpacket = new DatagramPacket(UCbuf, UCbuf.length, InetAddress.getByName(receivedAr[1]), 4900); //send the amount of nodes to the address where the multicast came from (with UDP unicast)
             UCsendingSocket.send(UCpacket);
+            System.out.println(InetAddress.getByName(receivedAr[1]));
+            System.out.println(bootstrapReturnMsg);
         }catch (Exception e){}
     }
 }
