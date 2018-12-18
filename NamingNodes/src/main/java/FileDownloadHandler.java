@@ -27,7 +27,7 @@ public class FileDownloadHandler implements Runnable
         Socket TCPsocket = null;
         ServerSocket TCPSsocket = null;
 
-        fullPath = Constants.replicationFileDirectory.toString() + "\\" + filename;
+        fullPath = Constants.replicationFileDirectory.toString() + "/" + filename;
         try {
             //Now receive the file
             TCPSsocket = new ServerSocket(port);

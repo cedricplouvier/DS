@@ -498,7 +498,7 @@ public class NamingNode implements AgentInterface
         for (int i = 0; i < listOfFiles.length; i++)
         {
             if (listOfFiles[i].isFile()) {
-                this.filenameMap.put(listOfFiles[i].toString().replace("C:\\Program Files\\test\\local\\",""), new FileProperties(0,true,thisNodeID));
+                this.filenameMap.put(listOfFiles[i].toString().replace("/home/pi/Documents/local/",""), new FileProperties(0,true,thisNodeID));
             }
         }
     }
@@ -580,7 +580,7 @@ public class NamingNode implements AgentInterface
             namingServer = (NamingInterface) registry.lookup("NamingInterface");
 
             //Bootstrap + Discovery
-            File hostnameFile = new File("C:\\Program Files\\test\\hostname.txt");
+            File hostnameFile = new File("C/home/pi/Documents/hostname.txt");
             BufferedReader BR = new BufferedReader(new FileReader(hostnameFile));
             hostname = BR.readLine();
             System.out.println(hostname + "hostname");
