@@ -27,6 +27,7 @@ public class NamingNode implements AgentInterface
     private boolean discoveryRunning = true;
     private boolean fileListenerRunning = true;
     private boolean fileAgentHandlerRunning = true;
+    private boolean waitForFileRep = false;
     private static DatagramSocket filenameSocket = null;
     private NamingInterface namingServer;
     private AgentInterface rmiNextNode;
@@ -331,14 +332,8 @@ public class NamingNode implements AgentInterface
                             nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                             previousNodeID = Integer.valueOf(receivedAr[1]);
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
-
-                            Thread startUpThr = new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try{ fileReplicationStartup(); }catch(Exception e) {}
-                                }
-                            });
-                            startUpThr.start();
+                            amountOfNodes = amountOfNodes + 1; //doesn't respond with the truth. Only does on NamingServer
+                            waitForFileRep = true;
                             break;
 
                         default:
@@ -398,7 +393,6 @@ public class NamingNode implements AgentInterface
                     break;
 
                 case "ack":
-                    System.out.println("ack received");
                     uploadDone = false; //use this variable so other processes know when they can start new upload threads
                     sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
 
@@ -409,6 +403,15 @@ public class NamingNode implements AgentInterface
                     FileUplHThr.join();
                     uploadDone = true;
                     break;
+
+                case "repDone":
+                    Thread startUpThr = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try{ fileReplicationStartup(); }catch(Exception e) {}
+                        }
+                    });
+                    startUpThr.start();
             }
         }
     }
@@ -416,49 +419,53 @@ public class NamingNode implements AgentInterface
     //at startup, checks local directory for and send files to the correct replication node (happens once)
     public void fileReplicationStartup() throws IOException
     {
-        Integer replicationNode;
+        System.out.println("Filerep startup start"+amountOfNodes);
+        Integer replicationNode = -1;
 
         File[] listOfFiles = Constants.localFileDirectory.listFiles();
         if(amountOfNodes > 1)
         {
+            System.out.println("files length"+listOfFiles.length);
+
             for (int i = 0; i < listOfFiles.length; i++)
             {
                 System.out.println("a  " + listOfFiles[i]);
-                if (listOfFiles[i].isFile()) //if( !listOfFiles[i].isDirectory())
-                {
                     //determine node where the replicated file will be stored
                     if((namingServer.fileLocator(listOfFiles[i].getName())).equals(thisNodeID)) //if replication node is the current node
                     {
                         System.out.println("zelfde ID");
                         replicationNode = previousNodeID; //replication will be on the previous node
+                        System.out.println("new repNode: "+replicationNode);
                     }
                     else replicationNode = namingServer.fileLocator(listOfFiles[i].getName()); //ask NameServer on which node it should be stored
-
-                    System.out.println(replicationNode);
 
                     //Start file upload, to replication node, in another thread
 
                     UDPSend(filenameSocket, "f " + listOfFiles[i].getName(),namingServer.getIP(replicationNode), Constants.UDPFileName_PORT); //upload will now be handles in filelistener() thread
-                    do{
-                        //nothing
-                    }while(!uploadDone);
-                }
+                    System.out.println("f " + listOfFiles[i].getName());
+                    while(true)
+                    {
+                        if(uploadDone)
+                        {
+                            break;
+                        }
+                    }
+                System.out.println(i);
             }
         }
         System.out.println("FileRep Startup done!");
+        if(waitForFileRep != true) UDPSend(filenameSocket,"repDone",namingServer.getIP(replicationNode), Constants.UDPFileName_PORT);
     }
 
     //gets called when previous node gets added, node checks if its replication files need to be stored on the new node
     public void fileReplicationUpdate() throws IOException
     {
         Integer replicationNode;
-        System.out.println("repUpdate");
+        System.out.println("repUpdate start");
 
         File[] listOfFiles = Constants.replicationFileDirectory.listFiles();
         for (int i = 0; i < listOfFiles.length; i++)
         {
-            if (listOfFiles[i].isFile())
-            {
                 //if file shouldn't be stored on nn node anymore
                 if(!(namingServer.fileLocator(listOfFiles[i].getName())).equals(thisNodeID))
                 {
@@ -473,7 +480,7 @@ public class NamingNode implements AgentInterface
                         }while(!uploadDone);
                         listOfFiles[i].delete();
                     }
-                }
+
             }
         }
     }
@@ -609,7 +616,6 @@ public class NamingNode implements AgentInterface
                 }
             });
             filenameListenerThr.start();
-
 
 
            /* //Check for changes in directory

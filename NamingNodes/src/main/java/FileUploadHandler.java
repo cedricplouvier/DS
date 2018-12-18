@@ -30,7 +30,7 @@ public class FileUploadHandler implements Runnable
         try {
             //send file with TCP
             TCPsocket = new Socket(ip, port);
-            System.out.println("socket made " + port);
+            System.out.println("socket made " + port + " " + fullPath);
         }catch (IOException e)
         {
             try {node.failure(nodeID);}catch(Exception fe) {}
@@ -43,10 +43,10 @@ public class FileUploadHandler implements Runnable
 
             bis.read(mybytearray, 0, mybytearray.length);
             os = TCPsocket.getOutputStream();
-            System.out.println("Sending (" + mybytearray.length + " bytes)");
+            //System.out.println("Sending (" + mybytearray.length + " bytes)");
             os.write(mybytearray, 0, mybytearray.length);
             os.flush();
-            System.out.println("Done.");
+            //System.out.println("Done.");
         } catch (IOException ie) {
             ie.printStackTrace();
         }

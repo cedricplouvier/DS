@@ -20,10 +20,6 @@ public class FileAgent implements Runnable, Serializable
     {
         String filename;
 
-        for (Map.Entry<String, FileProperties> entry : node.filenameMap.entrySet()) {
-            System.out.println("Keyfilename: " + entry.getKey());
-        }
-
         File[] listOfFiles = Constants.localFileDirectory.listFiles();
         {
             for (int i = 0; i < listOfFiles.length; i++)
@@ -68,6 +64,7 @@ public class FileAgent implements Runnable, Serializable
 
         for (Map.Entry<String, FileProperties> entry : this.agentFilesMap.entrySet()) {
             System.out.println(" agen Key: " + entry.getKey() + ". Value: " + entry.getValue().getLock() + " "+ entry.getValue().getIsLocal()+" "+ entry.getValue().getLock());
+            System.out.println("agent");
         }
     }
 }
