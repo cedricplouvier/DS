@@ -19,16 +19,17 @@ public class FileAgent implements Runnable, Serializable
     public void run()
     {
         String filename;
+
         File[] listOfFiles = Constants.localFileDirectory.listFiles();
         {
             for (int i = 0; i < listOfFiles.length; i++)
             {
                 if (listOfFiles[i].isFile())
                 {
-                    filename = listOfFiles[i].toString().replace("C:\\Users\\Public\\test\\local\\","");
-
+                    filename = listOfFiles[i].toString().replace("C:\\Users\\Maximiliaan\\test\\local\\","");
                     if(!this.agentFilesMap.containsKey(filename)) //if new file
                     {
+                        System.out.println("fn: "+filename+ " " + node.filenameMap.get(filename).getLocalNode());
                         this.agentFilesMap.put(filename, new FileProperties(0, false, node.filenameMap.get(filename).getLocalNode())); //put filename in map and lock request off
                         try {node.newLocalFile(filename);}catch(IOException e) {} //a new local file has been added, so check local files and start replication process
                     }
@@ -59,6 +60,11 @@ public class FileAgent implements Runnable, Serializable
             {                                                                                      //doesn't appear in the localnode map, the file has been removed
                 this.agentFilesMap.remove(entry.getKey());
             }
+        }
+
+        for (Map.Entry<String, FileProperties> entry : this.agentFilesMap.entrySet()) {
+            System.out.println(" agen Key: " + entry.getKey() + ". Value: " + entry.getValue().getLock() + " "+ entry.getValue().getIsLocal()+" "+ entry.getValue().getLock());
+            System.out.println("agent");
         }
     }
 }

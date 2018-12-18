@@ -32,7 +32,7 @@ public class FileDownloadHandler implements Runnable
             //Now receive the file
             TCPSsocket = new ServerSocket(port);
             TCPsocket = TCPSsocket.accept();
-            System.out.println("Socket made for " + filename);
+            System.out.println("Socket made for " + filename +" "+ port);
         }catch(IOException ie)
         {
             try {node.failure(nodeID);}catch(Exception e) {}
