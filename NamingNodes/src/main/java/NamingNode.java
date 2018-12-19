@@ -560,6 +560,7 @@ public class NamingNode implements AgentInterface
 
     public void start()
     {
+
         //IP
         String hostname;
         String ipString;
