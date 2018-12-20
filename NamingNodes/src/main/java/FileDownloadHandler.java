@@ -25,19 +25,23 @@ public class FileDownloadHandler implements Runnable
         FileOutputStream fos = null;
         BufferedOutputStream bos = null;
         Socket TCPsocket = null;
-        ServerSocket TCPSsocket = null;
+        ServerSocket TCPServersocket = null;
 
         fullPath = Constants.replicationFileDirectory.toString() + "/" + filename;
-        try {
-            //Now receive the file
-            TCPSsocket = new ServerSocket(port);
-            TCPsocket = TCPSsocket.accept();
-            System.out.println("Socket made for " + filename +" "+ port);
-        }catch(IOException ie)
+        //try {
+
+        /*}catch(IOException ie)
         {
             try {node.failure(nodeID);}catch(Exception e) {}
-        }
+        }*/
         try{
+            System.out.println("port "+port);
+            //Now receive the file
+            TCPServersocket = new ServerSocket(port);
+            System.out.println("socket must be accepted " +port);
+            TCPsocket = TCPServersocket.accept();
+            System.out.println("socket " + TCPsocket + " is accepted "+port);
+            System.out.println("Socket made for " + filename +" "+ port);
             byte [] mybytearray  = new byte [6022386];
             InputStream is = TCPsocket.getInputStream();
             fos = new FileOutputStream(fullPath);
@@ -61,7 +65,7 @@ public class FileDownloadHandler implements Runnable
                 if (fos != null) fos.close();
                 if (bos != null) bos.close();
                 if (TCPsocket != null) TCPsocket.close();
-                if (TCPSsocket != null) TCPSsocket.close();
+                if (TCPServersocket != null) TCPServersocket.close();
             }catch (Exception e){}
         }
     }

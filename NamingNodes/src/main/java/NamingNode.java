@@ -47,7 +47,7 @@ public class NamingNode implements AgentInterface
     public int calculatePort(Integer nodeID)
     {
         String nodeIDStr = Integer.toString(nodeID);
-        return 5000 + Math.abs(nodeIDStr.hashCode()) % 2000; //TCP port dependant on nodeID, ports between 5000 and 7000
+        return 20000 + Math.abs(nodeIDStr.hashCode()) % 1000; //TCP port dependant on nodeID, ports between 5000 and 7000
     }
 
     //if user requests to download a file
@@ -75,6 +75,7 @@ public class NamingNode implements AgentInterface
         FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
         FileDwnThr.start();
         FileDwnThr.join();
+        UDPSend(filenameSocket,"rec",locationIP,Constants.UDPFileName_PORT);
         this.filenameMap.put(filename, new FileProperties(0, false, this.filenameMap.get(filename).getLocalNode())); //should be unlocked
         File myFile = new File(Constants.replicationFileDirectory.toString() + filename);
         desktop.open(myFile);
@@ -267,6 +268,7 @@ public class NamingNode implements AgentInterface
                         });
                         startUpThr.start();
 
+                        /*
                         Thread fileAgentHandlerThr = new Thread(new Runnable() {
                             @Override
                             public void run() {
@@ -274,6 +276,7 @@ public class NamingNode implements AgentInterface
                             }
                         });
                         fileAgentHandlerThr.start();
+                        */
                     }
                     else System.out.println("Error: amount of nodes smaller than 0!");
 
@@ -357,6 +360,7 @@ public class NamingNode implements AgentInterface
         Thread FileDwnThr;
         Thread FileUplHThr;
         Integer sendingNode;
+        final String filename;
 
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
 
@@ -373,14 +377,16 @@ public class NamingNode implements AgentInterface
             {
                 case "f":
                     System.out.println(receivingPack.getAddress().toString());
-                    UDPSend(filenameSocket,"ack "+receivedAr[1],receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
                     System.out.println("ACK sent"); //send back ack and the filename
                     sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
+                    System.out.println(sendingNode);
                     FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1], calculatePort(sendingNode),this, sendingNode); //start TCP socket thread
                     System.out.println("filename: "+receivedAr[1]);
                     FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
                     FileDwnThr.start();
+                    UDPSend(filenameSocket,"ack "+receivedAr[1],receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
                     FileDwnThr.join();
+                    UDPSend(filenameSocket,"rec",receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT);
                     File[] listOfFiles = Constants.localFileDirectory.listFiles();
                     for (int i = 0; i < listOfFiles.length; i++) {
                         if (listOfFiles[i].isFile() && receivedAr[1].equals(listOfFiles[i]))
@@ -393,15 +399,13 @@ public class NamingNode implements AgentInterface
                     break;
 
                 case "ack":
-                    uploadDone = false; //use this variable so other processes know when they can start new upload threads
                     sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
 
                     System.out.println(receivedAr[1]);
+                    System.out.println(thisNodeID);
                     FileUploadHandler FUH = new FileUploadHandler(receivedAr[1], receivingPack.getAddress().toString().replace("/",""), calculatePort(thisNodeID), this, sendingNode);
                     FileUplHThr = new Thread(FUH);
                     FileUplHThr.start();
-                    FileUplHThr.join();
-                    uploadDone = true;
                     break;
 
                 case "repDone":
@@ -412,6 +416,9 @@ public class NamingNode implements AgentInterface
                         }
                     });
                     startUpThr.start();
+
+                case "rec":
+                    uploadDone = true;
             }
         }
     }
@@ -443,12 +450,10 @@ public class NamingNode implements AgentInterface
 
                     UDPSend(filenameSocket, "f " + listOfFiles[i].getName(),namingServer.getIP(replicationNode), Constants.UDPFileName_PORT); //upload will now be handles in filelistener() thread
                     System.out.println("f " + listOfFiles[i].getName());
-                    while(true)
+                    uploadDone = false; //use this variable so other processes know when they can start new upload threads
+                    while(!uploadDone)
                     {
-                        if(uploadDone)
-                        {
-                            break;
-                        }
+                        //do nothing
                     }
                 System.out.println(i);
             }
@@ -580,10 +585,10 @@ public class NamingNode implements AgentInterface
             namingServer = (NamingInterface) registry.lookup("NamingInterface");
 
             //Bootstrap + Discovery
-            File hostnameFile = new File("C/home/pi/Documents/hostname.txt");
+            File hostnameFile = new File("/home/pi/Documents/hostname.txt");
             BufferedReader BR = new BufferedReader(new FileReader(hostnameFile));
             hostname = BR.readLine();
-            System.out.println(hostname + "hostname");
+            System.out.println(hostname + " hostname");
             ipString = this.getThisIP().getHostAddress(); // InetAddress to string
             thisNodeID = calculateHash(hostname);
 
