@@ -26,6 +26,8 @@ public class FileAgent implements Runnable, Serializable
             {
                 if (listOfFiles[i].isFile())
                 {
+                    if(node.OS.equals("windows")) filename = listOfFiles[i].toString().replace("C:\\Program Files\\test\\local\\","");
+                    else if(node.OS.equals("raspbian")) filename = listOfFiles[i].toString().replace("/home/pi/Documents/local/","");
                     filename = listOfFiles[i].toString().replace("/home/pi/Documents/local/","");
                     if(!this.agentFilesMap.containsKey(filename)) //if new file
                     {

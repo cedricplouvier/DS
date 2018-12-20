@@ -21,13 +21,15 @@ public class FileDownloadHandler implements Runnable
     {
         int bytesRead;
         int current;
-        String fullPath;
+        String fullPath = null;
         FileOutputStream fos = null;
         BufferedOutputStream bos = null;
         Socket TCPsocket = null;
         ServerSocket TCPSsocket = null;
 
-        fullPath = Constants.replicationFileDirectory.toString() + "/" + filename;
+        if(node.OS.equals("windows")) fullPath = Constants.replicationFileDirectory.toString() + "\\" + filename;
+        else if(node.OS.equals("raspbian")) fullPath = Constants.replicationFileDirectory.toString() + "/" + filename;
+
         try {
             //Now receive the file
             TCPSsocket = new ServerSocket(port);

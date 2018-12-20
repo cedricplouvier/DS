@@ -1,6 +1,5 @@
 import javax.xml.stream.XMLStreamException;
 import java.awt.*;
-import java.nio.file.*;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -10,16 +9,12 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 import java.net.InetAddress;
 
-import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
-import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
-
 
 public class NamingNode implements AgentInterface
 {
     public Integer thisNodeID;
     public Integer nextNodeID;
+    public String OS;
     private Integer previousNodeID;
     private int amountOfNodes = 0;
 
@@ -497,8 +492,11 @@ public class NamingNode implements AgentInterface
         File[] listOfFiles = Constants.localFileDirectory.listFiles();
         for (int i = 0; i < listOfFiles.length; i++)
         {
-            if (listOfFiles[i].isFile()) {
-                this.filenameMap.put(listOfFiles[i].toString().replace("/home/pi/Documents/local/",""), new FileProperties(0,true,thisNodeID));
+            if (listOfFiles[i].isFile())
+            {
+                if(OS.equals("windows")) this.filenameMap.put(listOfFiles[i].toString().replace("C:\\Program Files\\test\\local\\",""), new FileProperties(0,true,thisNodeID));
+                else if(OS.equals("raspbian")) this.filenameMap.put(listOfFiles[i].toString().replace("/home/pi/Documents/local/",""), new FileProperties(0,true,thisNodeID));
+
             }
         }
     }
@@ -564,23 +562,25 @@ public class NamingNode implements AgentInterface
         String hostname;
         String ipString;
         String nameIP;
-        AgentInterface rmiPreviousNode;
-        int rmiPort;
-        String rmiStr;
+        File hostnameFile = null;
 
         //Threads
         Thread UDPListener;
-        Thread startUpThr;
         Thread filenameListenerThr;
-        final Thread fileAgentHandlerThr;
 
         try {
+            //determine OS
+            if(System.getProperty("os.name").toLowerCase().contains("rasp")) OS = "raspbian";
+            if(System.getProperty("os.name").toLowerCase().contains("win")) OS = "windows";;
+
             //namingServer RMI
             Registry registry = LocateRegistry.getRegistry(Constants.SERVER_IP, 1099); //server IP and port
             namingServer = (NamingInterface) registry.lookup("NamingInterface");
 
             //Bootstrap + Discovery
-            File hostnameFile = new File("C/home/pi/Documents/hostname.txt");
+            if(OS.equals("windows")) hostnameFile = new File("C:\\Program Files\\test\\hostname.txt");
+            else if(OS.equals("raspbian")) hostnameFile = new File("/home/pi/Documents/hostname.txt");
+
             BufferedReader BR = new BufferedReader(new FileReader(hostnameFile));
             hostname = BR.readLine();
             System.out.println(hostname + "hostname");
