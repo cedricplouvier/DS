@@ -302,13 +302,6 @@ public class NamingNode implements AgentInterface
                         case "p": //its a previous node message
                             previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
-                            updateUpThr = new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try{fileReplicationUpdate();} catch(Exception e){}
-                                }
-                            });
-                            updateUpThr.start();
 
                             //Previous node RMI (your client)
                             rmiStr = Integer.toString(thisNodeID);
@@ -360,7 +353,6 @@ public class NamingNode implements AgentInterface
         Thread FileDwnThr;
         Thread FileUplHThr;
         Integer sendingNode;
-        final String filename;
 
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
 
@@ -409,13 +401,26 @@ public class NamingNode implements AgentInterface
                     break;
 
                 case "repDone":
-                    Thread startUpThr = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try{ fileReplicationStartup(); }catch(Exception e) {}
-                        }
-                    });
-                    startUpThr.start();
+                    if(nextNodeID != previousNodeID)
+                    {
+                        Thread updateUpThr = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try{fileReplicationUpdate();} catch(Exception e){}
+                            }
+                        });
+                        updateUpThr.start();
+                    }
+                    else
+                    {
+                        Thread startUpThr = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try{ fileReplicationStartup(); }catch(Exception e) {}
+                            }
+                        });
+                        startUpThr.start();
+                    }
 
                 case "rec":
                     uploadDone = true;
@@ -483,7 +488,7 @@ public class NamingNode implements AgentInterface
                         do{
                             //nothing
                         }while(!uploadDone);
-                        listOfFiles[i].delete();
+                        if(listOfFiles[i].delete()) System.out.println(listOfFiles[i]+" deleted!");
                     }
 
             }
