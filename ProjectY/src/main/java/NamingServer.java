@@ -178,6 +178,8 @@ public class NamingServer implements NamingInterface {
             Registry registry = LocateRegistry.createRegistry(1099);
             registry.bind("NamingInterface", stub);
 
+            System.out.println(stub);
+
             //create Multicast
             MCreceivingSocket = new MulticastSocket(MULTICAST_PORT);
             MCreceivingSocket.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName("192.168.0.4")));

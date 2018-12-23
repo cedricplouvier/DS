@@ -29,7 +29,7 @@ public class FileAgent implements Runnable, Serializable
                     filename = listOfFiles[i].toString().replace("/home/pi/Documents/local/","");
                     if(!this.agentFilesMap.containsKey(filename)) //if new file
                     {
-                        System.out.println("fn: "+filename+ " " + node.filenameMap.get(filename).getLocalNode());
+                        System.out.println("new file: "+filename+ " " + node.filenameMap.get(filename).getLocalNode());
                         this.agentFilesMap.put(filename, new FileProperties(0, false, node.filenameMap.get(filename).getLocalNode())); //put filename in map and lock request off
                         try {node.newLocalFile(filename);}catch(IOException e) {} //a new local file has been added, so check local files and start replication process
                     }
@@ -38,10 +38,12 @@ public class FileAgent implements Runnable, Serializable
                         if(this.agentFilesMap.get(filename).getLock() == node.thisNodeID && node.filenameMap.get(filename).getLock() == 0) //if file is locked by this node, but node says its unlocked => unlock it
                         {
                             this.agentFilesMap.put(filename, new FileProperties(0, false, node.filenameMap.get(filename).getLocalNode()));
+                            System.out.println(filename +" unlocked by "+ node.thisNodeID);
                         }
                         else if(node.filenameMap.get(filename).getLock() == node.thisNodeID) //if this node says a file is locked by his ID => update
                         {
                             this.agentFilesMap.put(filename, new FileProperties(node.thisNodeID, false, node.filenameMap.get(filename).getLocalNode()));
+                            System.out.println(filename+" locked by "+node.thisNodeID);
                         }
                         else //if anything else, just copy the agent lock to this node map
                         {
@@ -59,12 +61,13 @@ public class FileAgent implements Runnable, Serializable
             if(entry.getValue().getLocalNode() == node.thisNodeID && !node.filenameMap.containsKey(entry.getKey())) //if its local node is this node and the key(filename) in the agent map
             {                                                                                      //doesn't appear in the localnode map, the file has been removed
                 this.agentFilesMap.remove(entry.getKey());
+                System.out.println("File was removed");
             }
         }
 
-        for (Map.Entry<String, FileProperties> entry : this.agentFilesMap.entrySet()) {
+        /*for (Map.Entry<String, FileProperties> entry : this.agentFilesMap.entrySet()) {
             System.out.println(" agen Key: " + entry.getKey() + ". Value: " + entry.getValue().getLock() + " "+ entry.getValue().getIsLocal()+" "+ entry.getValue().getLock());
             System.out.println("agent");
-        }
+        }*/
     }
 }

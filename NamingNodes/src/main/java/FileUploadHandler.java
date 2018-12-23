@@ -34,10 +34,8 @@ public class FileUploadHandler implements Runnable
             try {node.failure(nodeID);}catch(Exception fe) {}
         }*/
         try{
-            System.out.println("port "+port);
             //send file with TCP
             TCPsocket = new Socket(ip, port);
-            System.out.println("socket made " + port + " " + fullPath);
 
             File myFile = new File(fullPath);
             mybytearray = new byte [(int)myFile.length()];
@@ -49,7 +47,6 @@ public class FileUploadHandler implements Runnable
             //System.out.println("Sending (" + mybytearray.length + " bytes)");
             os.write(mybytearray, 0, mybytearray.length);
             os.flush();
-            System.out.println("upload done.");
         } catch (IOException ie) {
             ie.printStackTrace();
         }

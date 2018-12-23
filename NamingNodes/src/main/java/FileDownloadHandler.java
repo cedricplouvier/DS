@@ -35,13 +35,9 @@ public class FileDownloadHandler implements Runnable
             try {node.failure(nodeID);}catch(Exception e) {}
         }*/
         try{
-            System.out.println("port "+port);
             //Now receive the file
             TCPServersocket = new ServerSocket(port);
-            System.out.println("socket must be accepted " +port);
             TCPsocket = TCPServersocket.accept();
-            System.out.println("socket " + TCPsocket + " is accepted "+port);
-            System.out.println("Socket made for " + filename +" "+ port);
             byte [] mybytearray  = new byte [6022386];
             InputStream is = TCPsocket.getInputStream();
             fos = new FileOutputStream(fullPath);
@@ -57,7 +53,6 @@ public class FileDownloadHandler implements Runnable
 
             bos.write(mybytearray, 0 , current);
             bos.flush();
-            System.out.println(filename + " downloaded!");
 
         }catch(Exception e) {}
         finally {

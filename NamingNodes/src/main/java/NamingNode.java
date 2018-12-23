@@ -1,6 +1,7 @@
 import javax.xml.stream.XMLStreamException;
 import java.awt.*;
 import java.nio.file.*;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -32,11 +33,18 @@ public class NamingNode implements AgentInterface
     private NamingInterface namingServer;
     private AgentInterface rmiNextNode;
     private Thread fileAgentThr;
+    private Registry ClRegistry;
+    private Registry SvRegistery;
 
 
     public TreeMap<String,FileProperties> filenameMap = new TreeMap<>(); // filename - lock (on 1 - off 0)
 
     public NamingNode() {}
+
+    public String hello()
+    {
+        return "hello";
+    }
 
     public Integer calculateHash(String hostname)
     {
@@ -201,7 +209,6 @@ public class NamingNode implements AgentInterface
         String nodeMessage;
         int rmiPort;
         String rmiStr;
-        Registry registry;
         AgentInterface rmiPreviousNode;
 
         Thread updateUpThr;
@@ -213,7 +220,6 @@ public class NamingNode implements AgentInterface
         while (discoveryRunning)
         {
             try {
-                System.out.println("ready to receive discovery UDP");
                 UCreceivingSocket.receive(receivingPack);
                 received = new String(receivingPack.getData(), 0, receivingPack.getLength());
                 System.out.println("received: " + received);
@@ -240,21 +246,35 @@ public class NamingNode implements AgentInterface
                     }
                     else if (amountOfNodes > 1)
                     {
-                        System.out.println("AoN: " + amountOfNodes);
                         previousNodeID = Integer.parseInt(receivedAr[1]);
                         nextNodeID = Integer.parseInt(receivedAr[2]);
 
                         if (previousNodeID.equals(nextNodeID))
                         {
+
                             nodeMessage = "pn " + thisNodeID;
                             UDPSend(UCsendingSocket, nodeMessage, namingServer.getIP(previousNodeID), Constants.UDP_PORT);
-                            System.out.println(nodeMessage);
+                            //Previous node RMI (your client)
+                            try{rmiStr = Integer.toString(thisNodeID);
+                            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
+                            rmiPreviousNode = (AgentInterface) UnicastRemoteObject.exportObject(this, 0);
+                            SvRegistery = LocateRegistry.createRegistry(rmiPort);
+                            SvRegistery.bind("AgentInterface", rmiPreviousNode);
+                                System.out.println(rmiPreviousNode);}catch(Exception e){
+                                System.err.println("server exc "+e.toString());
+                                e.printStackTrace();
+                            }
+
+
+
+                            nodeMessage = "pn " + thisNodeID;
+                            UDPSend(UCsendingSocket, nodeMessage, namingServer.getIP(previousNodeID), Constants.UDP_PORT);
                         }
                         else
                         {
                             nodeMessage = "p " + thisNodeID;
-                            System.out.println("ip vorige : " + namingServer.getIP(previousNodeID));
                             UDPSend(UCsendingSocket, nodeMessage, namingServer.getIP(previousNodeID), Constants.UDP_PORT);
+
                             nodeMessage = "n " + thisNodeID;
                             UDPSend(UCsendingSocket, nodeMessage, namingServer.getIP(nextNodeID), Constants.UDP_PORT);
                         }
@@ -268,7 +288,7 @@ public class NamingNode implements AgentInterface
                         });
                         startUpThr.start();
 
-                        /*
+
                         Thread fileAgentHandlerThr = new Thread(new Runnable() {
                             @Override
                             public void run() {
@@ -276,52 +296,23 @@ public class NamingNode implements AgentInterface
                             }
                         });
                         fileAgentHandlerThr.start();
-                        */
+
                     }
                     else System.out.println("Error: amount of nodes smaller than 0!");
-
-                    //Next node RMI (your server)
-                    rmiStr = Integer.toString(nextNodeID);
-                    rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
-                    registry = LocateRegistry.getRegistry(namingServer.getIP(nextNodeID), rmiPort);
-                    rmiNextNode = (AgentInterface) registry.lookup("AgentInterface");
-
-                    //Previous node RMI (your client)
-                    rmiStr = Integer.toString(thisNodeID);
-                    rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
-                    rmiPreviousNode = (AgentInterface) UnicastRemoteObject.exportObject(this, 0);
-                    registry = LocateRegistry.createRegistry(rmiPort);
-                    registry.bind("AgentInterface", rmiPreviousNode);
                 }
                 else //if from any other IP => node
                 {
                     receivedAr = received.split(" ");
-                    //System.out.println(receivedAr);
                     switch (receivedAr[0])
                     {
                         case "p": //its a previous node message
                             previousNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your previous nodeID
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
-
-                            //Previous node RMI (your client)
-                            rmiStr = Integer.toString(thisNodeID);
-                            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
-                            rmiPreviousNode = (AgentInterface) UnicastRemoteObject.exportObject(this, 0);
-                            registry = LocateRegistry.createRegistry(rmiPort);
-                            registry.bind("AgentInterface", rmiPreviousNode);
-
                             break;
 
                         case "n": //its a next node message
                             nextNodeID = Integer.valueOf(receivedAr[1]); //his ID is now your next nodeID
                             System.out.println("nextNode = " + nextNodeID + " , previousNode = " + previousNodeID);
-
-                            //Next node RMI (your server)
-                            rmiStr = Integer.toString(nextNodeID);
-                            rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
-                            registry = LocateRegistry.getRegistry(namingServer.getIP(nextNodeID), rmiPort);
-                            rmiNextNode = (AgentInterface) registry.lookup("AgentInterface");
-
                             break;
 
                         case "pn": //next and previous node are the same (amount of nodes = 2)
@@ -345,7 +336,7 @@ public class NamingNode implements AgentInterface
     }
 
     //listens to the specific filename port
-    public void filenameListener() throws IOException, InterruptedException
+    public void filenameListener() throws IOException, InterruptedException, NotBoundException
     {
         String received;
         String[] receivedAr;
@@ -358,22 +349,17 @@ public class NamingNode implements AgentInterface
 
         while(fileListenerRunning)
         {
-            System.out.println("ready to receive file");
             filenameSocket.receive(receivingPack);
 
             received = new String(receivingPack.getData(), 0, receivingPack.getLength());
-            System.out.println("pakket received: " + received);
+            System.out.println("received: " + received);
 
             receivedAr = received.split(" ");
             switch(receivedAr[0])
             {
                 case "f":
-                    System.out.println(receivingPack.getAddress().toString());
-                    System.out.println("ACK sent"); //send back ack and the filename
                     sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
-                    System.out.println(sendingNode);
                     FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1], calculatePort(sendingNode),this, sendingNode); //start TCP socket thread
-                    System.out.println("filename: "+receivedAr[1]);
                     FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
                     FileDwnThr.start();
                     UDPSend(filenameSocket,"ack "+receivedAr[1],receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
@@ -392,16 +378,13 @@ public class NamingNode implements AgentInterface
 
                 case "ack":
                     sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
-
-                    System.out.println(receivedAr[1]);
-                    System.out.println(thisNodeID);
                     FileUploadHandler FUH = new FileUploadHandler(receivedAr[1], receivingPack.getAddress().toString().replace("/",""), calculatePort(thisNodeID), this, sendingNode);
                     FileUplHThr = new Thread(FUH);
                     FileUplHThr.start();
                     break;
 
                 case "repDone":
-                    if(nextNodeID != previousNodeID)
+                    if(nextNodeID == previousNodeID)
                     {
                         Thread updateUpThr = new Thread(new Runnable() {
                             @Override
@@ -422,6 +405,17 @@ public class NamingNode implements AgentInterface
                         startUpThr.start();
                     }
 
+                    //Next node RMI (your server)
+                    String rmiStr = Integer.toString(nextNodeID);
+                    int rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
+                    System.out.println(namingServer.getIP(nextNodeID));
+                    ClRegistry = LocateRegistry.getRegistry(namingServer.getIP(nextNodeID), rmiPort);
+                    rmiNextNode = (AgentInterface) ClRegistry.lookup("AgentInterface");
+
+                    System.out.println("nextrmi: "+rmiNextNode);
+
+                    System.out.println(rmiNextNode.hello());
+
                 case "rec":
                     uploadDone = true;
             }
@@ -429,42 +423,40 @@ public class NamingNode implements AgentInterface
     }
 
     //at startup, checks local directory for and send files to the correct replication node (happens once)
-    public void fileReplicationStartup() throws IOException
+    public void fileReplicationStartup() throws IOException, NotBoundException
     {
-        System.out.println("Filerep startup start"+amountOfNodes);
+        System.out.println("Filerep startup start");
         Integer replicationNode = -1;
 
         File[] listOfFiles = Constants.localFileDirectory.listFiles();
         if(amountOfNodes > 1)
         {
-            System.out.println("files length"+listOfFiles.length);
-
             for (int i = 0; i < listOfFiles.length; i++)
             {
-                System.out.println("a  " + listOfFiles[i]);
-                    //determine node where the replicated file will be stored
-                    if((namingServer.fileLocator(listOfFiles[i].getName())).equals(thisNodeID)) //if replication node is the current node
-                    {
-                        System.out.println("zelfde ID");
-                        replicationNode = previousNodeID; //replication will be on the previous node
-                        System.out.println("new repNode: "+replicationNode);
-                    }
-                    else replicationNode = namingServer.fileLocator(listOfFiles[i].getName()); //ask NameServer on which node it should be stored
+                //determine node where the replicated file will be stored
+                if((namingServer.fileLocator(listOfFiles[i].getName())).equals(thisNodeID)) //if replication node is the current node
+                {
+                    replicationNode = previousNodeID; //replication will be on the previous node
+                }
+                else replicationNode = namingServer.fileLocator(listOfFiles[i].getName()); //ask NameServer on which node it should be stored
 
-                    //Start file upload, to replication node, in another thread
+                //Start file upload, to replication node, in another thread
 
-                    UDPSend(filenameSocket, "f " + listOfFiles[i].getName(),namingServer.getIP(replicationNode), Constants.UDPFileName_PORT); //upload will now be handles in filelistener() thread
-                    System.out.println("f " + listOfFiles[i].getName());
-                    uploadDone = false; //use this variable so other processes know when they can start new upload threads
-                    while(!uploadDone)
-                    {
-                        //do nothing
-                    }
-                System.out.println(i);
+                UDPSend(filenameSocket, "f " + listOfFiles[i].getName(),namingServer.getIP(replicationNode), Constants.UDPFileName_PORT); //upload will now be handles in filelistener() thread
+                uploadDone = false; //use this variable so other processes know when they can start new upload threads
+                while(!uploadDone)
+                {
+                    //do nothing
+                }
             }
         }
         System.out.println("FileRep Startup done!");
-        if(waitForFileRep != true) UDPSend(filenameSocket,"repDone",namingServer.getIP(replicationNode), Constants.UDPFileName_PORT);
+        if(waitForFileRep != true)
+        {
+
+
+            UDPSend(filenameSocket,"repDone",namingServer.getIP(replicationNode), Constants.UDPFileName_PORT);
+        }
     }
 
     //gets called when previous node gets added, node checks if its replication files need to be stored on the new node
@@ -588,6 +580,8 @@ public class NamingNode implements AgentInterface
             //namingServer RMI
             Registry registry = LocateRegistry.getRegistry(Constants.SERVER_IP, 1099); //server IP and port
             namingServer = (NamingInterface) registry.lookup("NamingInterface");
+
+            System.out.println(namingServer);
 
             //Bootstrap + Discovery
             File hostnameFile = new File("/home/pi/Documents/hostname.txt");
