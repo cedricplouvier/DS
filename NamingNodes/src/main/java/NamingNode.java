@@ -255,7 +255,7 @@ public class NamingNode implements AgentInterface
                             nodeMessage = "pn " + thisNodeID;
                             UDPSend(UCsendingSocket, nodeMessage, namingServer.getIP(previousNodeID), Constants.UDP_PORT);
                             //Previous node RMI (your client)
-                            try{rmiStr = Integer.toString(thisNodeID);
+                            /*try{rmiStr = Integer.toString(thisNodeID);
                             rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
                             rmiPreviousNode = (AgentInterface) UnicastRemoteObject.exportObject(this, 0);
                             SvRegistery = LocateRegistry.createRegistry(rmiPort);
@@ -263,7 +263,7 @@ public class NamingNode implements AgentInterface
                                 System.out.println(rmiPreviousNode);}catch(Exception e){
                                 System.err.println("server exc "+e.toString());
                                 e.printStackTrace();
-                            }
+                            }*/
 
 
 
@@ -406,7 +406,7 @@ public class NamingNode implements AgentInterface
                     }
 
                     //Next node RMI (your server)
-                    String rmiStr = Integer.toString(nextNodeID);
+                    /*String rmiStr = Integer.toString(nextNodeID);
                     int rmiPort = 1000 + Math.abs(rmiStr.hashCode()) % 1000;
                     System.out.println(namingServer.getIP(nextNodeID));
                     ClRegistry = LocateRegistry.getRegistry(namingServer.getIP(nextNodeID), rmiPort);
@@ -414,7 +414,8 @@ public class NamingNode implements AgentInterface
 
                     System.out.println("nextrmi: "+rmiNextNode);
 
-                    System.out.println(rmiNextNode.hello());
+                    System.out.println(rmiNextNode.hello());*/
+                    break;
 
                 case "rec":
                     uploadDone = true;
