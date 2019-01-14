@@ -289,13 +289,13 @@ public class NamingNode implements AgentInterface
                         startUpThr.start();
 
 
-                        Thread fileAgentHandlerThr = new Thread(new Runnable() {
+                        /*Thread fileAgentHandlerThr = new Thread(new Runnable() {
                             @Override
                             public void run() {
                                 try{ fileAgentHandler(); }catch(Exception e) {}
                             }
                         });
-                        fileAgentHandlerThr.start();
+                        fileAgentHandlerThr.start();*/
 
                     }
                     else System.out.println("Error: amount of nodes smaller than 0!");
