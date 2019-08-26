@@ -28,6 +28,7 @@ public class NamingNode implements AgentInterface
     private boolean discoveryRunning = true;
     private boolean fileListenerRunning = true;
     private boolean fileAgentHandlerRunning = true;
+    private boolean failureCheckRun = true;
     private boolean waitForFileRep = false;
     private static DatagramSocket filenameSocket = null;
     private NamingInterface namingServer;
@@ -46,6 +47,10 @@ public class NamingNode implements AgentInterface
         return "hello";
     }
 
+    //-------------------------------------------------------------------------//
+    // Infrastructure functions
+    //-------------------------------------------------------------------------//
+
     public Integer calculateHash(String hostname)
     {
         return Math.abs(hostname.hashCode()) % 32768;
@@ -57,6 +62,43 @@ public class NamingNode implements AgentInterface
         String nodeIDStr = Integer.toString(nodeID);
         return 20000 + Math.abs(nodeIDStr.hashCode()) % 1000; //TCP port dependant on nodeID, ports between 5000 and 7000
     }
+
+    //sending packets with UDP, unicast/multicast
+    public void UDPSend(DatagramSocket sendingSocket, String message, String ip, int port)
+    {
+        try{
+            byte buf[] = message.getBytes();
+            DatagramPacket pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(ip),port);
+            sendingSocket.send(pack);
+        }catch(IOException ie)
+        {
+            try {failure(namingServer.getNodeID(ip));} catch(Exception e){}
+        }
+    }
+
+    //get the IP from nn node
+    public InetAddress getThisIP()
+    {
+        try {
+            Enumeration e = NetworkInterface.getNetworkInterfaces();
+            while (e.hasMoreElements()) {
+                NetworkInterface n = (NetworkInterface) e.nextElement();
+                Enumeration ee = n.getInetAddresses();
+                while (ee.hasMoreElements()) {  //while through all IPs until we find the matching IP
+                    InetAddress i = (InetAddress) ee.nextElement();
+                    if (i.getHostAddress().contains("192.168.0.")) {
+                        return i;
+                    }
+                }
+            }
+        }catch(Exception e) {}
+        return null;
+    }
+
+
+    //-------------------------------------------------------------------------//
+    // GUI functions
+    //-------------------------------------------------------------------------//
 
     //if user requests to download a file
     public void downloadAndOpenFile(String filename) throws IOException, InterruptedException
@@ -110,30 +152,13 @@ public class NamingNode implements AgentInterface
         myFile.delete();
     }
 
-    //get the IP from nn node
-    public InetAddress getThisIP()
+    //-------------------------------------------------------------------------//
+    // Shutdown protocol
+    //-------------------------------------------------------------------------//
+    public void shutdown() throws IOException, XMLStreamException
     {
-        try {
-            Enumeration e = NetworkInterface.getNetworkInterfaces();
-            while (e.hasMoreElements()) {
-                NetworkInterface n = (NetworkInterface) e.nextElement();
-                Enumeration ee = n.getInetAddresses();
-                while (ee.hasMoreElements()) {  //while through all IPs until we find the matching IP
-                    InetAddress i = (InetAddress) ee.nextElement();
-                    if (i.getHostAddress().contains("192.168.0.")) {
-                        return i;
-                    }
-                }
-            }
-        }catch(Exception e) {}
-        return null;
-    }
-
-    //Shutdown protocol
-    public void shutdown(Integer thisNodeID, Integer nextNodeID, Integer previousNodeID) throws IOException, XMLStreamException
-    {
+        BufferedReader reader;
         DatagramSocket sendingSocket = new DatagramSocket();
-        Thread FileUplHThr;
         String nextIP = namingServer.getIP(nextNodeID);
         String previousIP = namingServer.getIP(previousNodeID);
         //send nextNodeID to your previous node
@@ -142,6 +167,7 @@ public class NamingNode implements AgentInterface
         //send previousNodeID to your next node
         sendingStr = "p " + previousNodeID;
         UDPSend(sendingSocket, sendingStr, nextIP, Constants.UDP_PORT);
+
 
         File[] listOfFiles = Constants.replicationFileDirectory.listFiles();
         //send all files from replicationDir to the previous node and delete them, locally, when done
@@ -156,29 +182,74 @@ public class NamingNode implements AgentInterface
                 listOfFiles[i].delete(); //if upload done, delete
             }
         }
+        //
+        reader = new BufferedReader(new FileReader("filelog.txt"));
+        String[] lineSplit;
+        String line = reader.readLine();
+        while(line != null)
+        {
+            lineSplit = line.split("\\s+");
+            String filename = lineSplit[0];
+            String ownerNode = lineSplit[1];
+            UDPSend(filenameSocket, "f " + filename,ownerNode, Constants.UDPFileName_PORT);
+            do{
+                //nothing
+            }while(!uploadDone);
+        }
+        reader.close();
+
+        //clear out the filelog before shutting down
+        PrintWriter writer = new PrintWriter("filelog.txt");
+        writer.print("");
+        writer.close();
+
         discoveryRunning = false;
+        failureCheckRun = false;
         fileListenerRunning = false;
         fileAgentHandlerRunning = false; //turn off remaining threads
         namingServer.removeNode(thisNodeID); //remove node from IPMap on the server
     }
 
-    //sending packets with UDP, unicast/multicast
-    public void UDPSend(DatagramSocket sendingSocket, String message, String ip, int port)
+    public void shutdownCheck()
     {
-        try{
-            byte buf[] = message.getBytes();
-            DatagramPacket pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(ip),port);
-            sendingSocket.send(pack);
-        }catch(IOException ie)
+        boolean running  = true;
+        Scanner scanner = new Scanner(System.in);
+        while(running)
         {
-            try {failure(namingServer.getNodeID(ip));} catch(Exception e){}
+            String input = scanner.nextLine();  // Read user input
+            if (input.equals("SH"))
+            {
+                try {
+                    shutdown();
+                    running = false; //otherwise keep checking
+                } catch (Exception e) {
+                }
+            }
+        }
+    }
+    //-------------------------------------------------------------------------//
+    //Failure
+    //-------------------------------------------------------------------------//
+
+    //Failure Check
+    public void failureCheck(Integer prevNodeID) throws IOException, InterruptedException
+    {
+        while(failureCheckRun)
+        {
+        String prevNodeIP = namingServer.getIP(previousNodeID);
+        InetAddress prevHostIP = InetAddress.getByName(prevNodeIP);
+        boolean isReachable = prevHostIP.isReachable(10000);
+        if (!isReachable)
+        {
+            failure(previousNodeID);
+        }
+        Thread.sleep(5000);
         }
     }
 
     //Failure protocol
     public void failure(Integer failedNode) throws IOException, InterruptedException
     {
-        Thread failureAgentThr;
         DatagramSocket UCsocket = new DatagramSocket(Constants.UDP_PORT);
         String receivedAr[] = namingServer.failure(failedNode).split(" ");
         //give previous node of the failed one, his new next node
@@ -194,12 +265,11 @@ public class NamingNode implements AgentInterface
         nodeMessage = "p " + previousNode;
         UDPSend(UCsocket, nodeMessage, namingServer.getIP(nextNode), Constants.UDP_PORT);
         UCsocket.close();
-        /*FailureAgent failureAgent = new FailureAgent(failedNode, thisNodeID);
-        failureAgentThr = new Thread(failureAgent);
-        failureAgentThr.start();
-        failureAgentThr.join();
-        rmiNextNode.failureAgentReceiver(failureAgent);*/
     }
+
+    //-------------------------------------------------------------------------//
+    // Discovery
+    //-------------------------------------------------------------------------//
 
     //Listens for UDP unicasts, from server or other nodes, with info over new nodes or when replication file needs to be downloaded
     public void discovery() throws IOException, XMLStreamException {
@@ -212,6 +282,8 @@ public class NamingNode implements AgentInterface
         AgentInterface rmiPreviousNode;
 
         Thread updateUpThr;
+        Thread failureCheckThr;
+        Thread shutdownCheckThr;
         DatagramSocket UCreceivingSocket = new DatagramSocket(Constants.UDP_PORT);
         DatagramSocket UCsendingSocket = new DatagramSocket();
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
@@ -328,12 +400,36 @@ public class NamingNode implements AgentInterface
                     }
                 }
 
+                failureCheckThr = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try{
+                            failureCheck(previousNodeID);
+                        }catch(Exception e){}
+                    }
+                });
+                failureCheckThr.start();
+
+                shutdownCheckThr = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try{
+                            shutdownCheck();
+                        }catch(Exception e){}
+                    }
+                });
+                shutdownCheckThr.start();
+
             } catch (Exception s) {
                 //    shutdown(namingServer,thisNodeID,nextNodeID,previousNodeID);
                 //break;
             }
         }
     }
+
+    //-------------------------------------------------------------------------//
+    // Replication
+    //-------------------------------------------------------------------------//
 
     //listens to the specific filename port
     public void filenameListener() throws IOException, InterruptedException, NotBoundException
@@ -426,6 +522,7 @@ public class NamingNode implements AgentInterface
     //at startup, checks local directory for and send files to the correct replication node (happens once)
     public void fileReplicationStartup() throws IOException, NotBoundException
     {
+        PrintWriter writer = new PrintWriter("filelog.txt", "UTF-8");
         System.out.println("Filerep startup start");
         Integer replicationNode = -1;
 
@@ -440,7 +537,7 @@ public class NamingNode implements AgentInterface
                     replicationNode = previousNodeID; //replication will be on the previous node
                 }
                 else replicationNode = namingServer.fileLocator(listOfFiles[i].getName()); //ask NameServer on which node it should be stored
-
+                writer.println(listOfFiles[i].getName() + " " + replicationNode);
                 //Start file upload, to replication node, in another thread
 
                 UDPSend(filenameSocket, "f " + listOfFiles[i].getName(),namingServer.getIP(replicationNode), Constants.UDPFileName_PORT); //upload will now be handles in filelistener() thread
@@ -506,6 +603,10 @@ public class NamingNode implements AgentInterface
         }
     }
 
+    //-------------------------------------------------------------------------//
+    // Agents
+    //-------------------------------------------------------------------------//
+
     //only needed first time because thread is created in Discovery thread and this one can't wait for fileAgentThread to end. It needs to handle other incoming requests
     public void fileAgentHandler()
     {
@@ -560,6 +661,11 @@ public class NamingNode implements AgentInterface
         failureAgentThr.join();
         rmiNextNode.failureAgentReceiver(failureAgent);
     }*/
+
+
+    //-------------------------------------------------------------------------//
+    // Main function
+    //-------------------------------------------------------------------------//
 
     public void start()
     {
@@ -621,7 +727,6 @@ public class NamingNode implements AgentInterface
                 }
             });
             filenameListenerThr.start();
-
 
            /* //Check for changes in directory
             DirectoryWatcher DW = new DirectoryWatcher(namingServer);
