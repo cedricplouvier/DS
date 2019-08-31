@@ -179,8 +179,7 @@ public class NamingNode implements AgentInterface
                 do{
                     //nothing
                 }while(!uploadDone);
-                File file = new File("/home/pi/Documents/replication" + listOfFiles[i].getName());
-                file.delete(); //if upload done, delete
+                listOfFiles[i].delete(); //if upload done, delete
             }
         }
         //
@@ -237,14 +236,14 @@ public class NamingNode implements AgentInterface
     {
         while(failureCheckRun)
         {
-        String prevNodeIP = namingServer.getIP(previousNodeID);
-        InetAddress prevHostIP = InetAddress.getByName(prevNodeIP); //every node only checks his neighbour, to prevent too much trafic
-        boolean isReachable = prevHostIP.isReachable(10000); //waits for 10s for response and then times out
-        if (!isReachable)
-        {
-            failure(previousNodeID); //if not Reachable => call failure method below
-        }
-        Thread.sleep(5000); //ping every 5 seconds
+            String prevNodeIP = namingServer.getIP(previousNodeID);
+            InetAddress prevHostIP = InetAddress.getByName(prevNodeIP); //every node only checks his neighbour, to prevent too much trafic
+            boolean isReachable = prevHostIP.isReachable(10000); //waits for 10s for response and then times out
+            if (!isReachable)
+            {
+                failure(previousNodeID); //if not Reachable => call failure method below
+            }
+            Thread.sleep(5000); //ping every 5 seconds
         }
     }
 
@@ -587,8 +586,7 @@ public class NamingNode implements AgentInterface
                         do{
                             //nothing
                         }while(!uploadDone);
-                        File file = new File("/home/pi/Documents/replication" + listOfFiles[i].getName());
-                        file.delete(); //if upload done, delete
+                        listOfFiles[i].delete(); //if upload done, delete
                         //if(listOfFiles[i].delete()) System.out.println(listOfFiles[i]+" deleted!");
                     }
 
