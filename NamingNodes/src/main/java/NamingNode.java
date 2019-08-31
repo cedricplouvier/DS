@@ -237,25 +237,25 @@ public class NamingNode implements AgentInterface
         while(failureCheckRun)
         {
         String prevNodeIP = namingServer.getIP(previousNodeID);
-        InetAddress prevHostIP = InetAddress.getByName(prevNodeIP);
-        boolean isReachable = prevHostIP.isReachable(10000);
+        InetAddress prevHostIP = InetAddress.getByName(prevNodeIP); //every node only checks his neighbour, to prevent too much trafic
+        boolean isReachable = prevHostIP.isReachable(10000); //waits for 10s for response and then times out
         if (!isReachable)
         {
-            failure(previousNodeID);
+            failure(previousNodeID); //if not Reachable => call failure method below
         }
-        Thread.sleep(5000);
+        Thread.sleep(5000); //ping every 5 seconds
         }
     }
 
     //Failure protocol
-    public void failure(Integer failedNode) throws IOException, InterruptedException
+    public void failure(Integer failedNode) throws IOException
     {
         DatagramSocket UCsocket = new DatagramSocket(Constants.UDP_PORT);
-        String receivedAr[] = namingServer.failure(failedNode).split(" ");
+        String receivedAr[] = namingServer.failure(failedNode).split(" "); //server will return its previous and next node
         //give previous node of the failed one, his new next node
         Integer previousNode = Integer.valueOf(receivedAr[0]);
         Integer nextNode = Integer.valueOf(receivedAr[1]);
-        if(previousNode == nextNode)
+        if(previousNode.equals(nextNode)) //you are the only one left in the system
         {
             UDPSend(UCsocket, "pn "+previousNode, namingServer.getIP(previousNodeID), Constants.UDP_PORT);
         }
