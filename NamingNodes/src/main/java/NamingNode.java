@@ -440,6 +440,7 @@ public class NamingNode implements AgentInterface
         Thread FileDwnThr;
         Thread FileUplHThr;
         Integer sendingNode;
+        PrintWriter writer = new PrintWriter("/home/pi/Documents/filelog.txt", "UTF-8");
 
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
 
@@ -454,6 +455,7 @@ public class NamingNode implements AgentInterface
             switch(receivedAr[0])
             {
                 case "f":
+                    writer.println(receivedAr[1] + " " + thisNodeID);
                     sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
                     FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1], calculatePort(sendingNode),this, sendingNode); //start TCP socket thread
                     FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
@@ -517,6 +519,7 @@ public class NamingNode implements AgentInterface
                     uploadDone = true;
             }
         }
+        writer.close();
     }
 
     //at startup, checks local directory for and send files to the correct replication node (happens once)
@@ -549,7 +552,7 @@ public class NamingNode implements AgentInterface
                     //do nothing
                 }
             }
-            writer.close();
+
         }
         System.out.println("FileRep Startup done!");
         if(!waitForFileRep)
@@ -558,6 +561,7 @@ public class NamingNode implements AgentInterface
 
             UDPSend(filenameSocket,"repDone",namingServer.getIP(replicationNode), Constants.UDPFileName_PORT);
         }
+        writer.close();
     }
 
     //gets called when previous node gets added, node checks if its replication files need to be stored on the new node
