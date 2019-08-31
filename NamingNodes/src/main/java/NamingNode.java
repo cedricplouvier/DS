@@ -537,6 +537,8 @@ public class NamingNode implements AgentInterface
                     replicationNode = previousNodeID; //replication will be on the previous node
                 }
                 else replicationNode = namingServer.fileLocator(listOfFiles[i].getName()); //ask NameServer on which node it should be stored
+
+                System.out.println(listOfFiles[i].getName() + " " + replicationNode);
                 writer.println(listOfFiles[i].getName() + " " + replicationNode);
                 //Start file upload, to replication node, in another thread
 
@@ -547,6 +549,7 @@ public class NamingNode implements AgentInterface
                     //do nothing
                 }
             }
+            writer.close();
         }
         System.out.println("FileRep Startup done!");
         if(!waitForFileRep)
@@ -578,7 +581,8 @@ public class NamingNode implements AgentInterface
                         do{
                             //nothing
                         }while(!uploadDone);
-                        if(listOfFiles[i].delete()) System.out.println(listOfFiles[i]+" deleted!");
+                        System.out.println(listOfFiles[i].delete());
+                        //if(listOfFiles[i].delete()) System.out.println(listOfFiles[i]+" deleted!");
                     }
 
             }
