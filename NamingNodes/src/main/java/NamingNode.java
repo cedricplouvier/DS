@@ -179,7 +179,8 @@ public class NamingNode implements AgentInterface
                 do{
                     //nothing
                 }while(!uploadDone);
-                listOfFiles[i].delete(); //if upload done, delete
+                File file = new File("/home/pi/Documents/replication" + listOfFiles[i].getName());
+                file.delete(); //if upload done, delete
             }
         }
         //
@@ -455,6 +456,7 @@ public class NamingNode implements AgentInterface
             switch(receivedAr[0])
             {
                 case "f":
+
                     writer.println(receivedAr[1] + " " + thisNodeID);
                     sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
                     FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1], calculatePort(sendingNode),this, sendingNode); //start TCP socket thread
@@ -585,7 +587,8 @@ public class NamingNode implements AgentInterface
                         do{
                             //nothing
                         }while(!uploadDone);
-                        System.out.println(listOfFiles[i].delete());
+                        File file = new File("/home/pi/Documents/replication" + listOfFiles[i].getName());
+                        file.delete(); //if upload done, delete
                         //if(listOfFiles[i].delete()) System.out.println(listOfFiles[i]+" deleted!");
                     }
 
