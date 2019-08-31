@@ -183,7 +183,7 @@ public class NamingNode implements AgentInterface
             }
         }
         //
-        reader = new BufferedReader(new FileReader("filelog.txt"));
+        reader = new BufferedReader(new FileReader("/home/pi/Documents/filelog.txt"));
         String[] lineSplit;
         String line = reader.readLine();
         while(line != null)
@@ -199,7 +199,7 @@ public class NamingNode implements AgentInterface
         reader.close();
 
         //clear out the filelog before shutting down
-        PrintWriter writer = new PrintWriter("filelog.txt");
+        PrintWriter writer = new PrintWriter("/home/pi/Documents/filelog.txt");
         writer.print("");
         writer.close();
 
@@ -522,7 +522,7 @@ public class NamingNode implements AgentInterface
     //at startup, checks local directory for and send files to the correct replication node (happens once)
     public void fileReplicationStartup() throws IOException, NotBoundException
     {
-        PrintWriter writer = new PrintWriter("filelog.txt", "UTF-8");
+        PrintWriter writer = new PrintWriter("/home/pi/Documents/filelog.txt", "UTF-8");
         System.out.println("Filerep startup start");
         Integer replicationNode = -1;
 
@@ -549,7 +549,7 @@ public class NamingNode implements AgentInterface
             }
         }
         System.out.println("FileRep Startup done!");
-        if(waitForFileRep != true)
+        if(!waitForFileRep)
         {
 
 
