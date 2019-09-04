@@ -18,17 +18,19 @@ public class FilesGui extends JFrame {
         setSize(300, 200);
         add(rootpanel);
         System.out.println("rootpanel added");
-        String[] columns = new String[] {"file", "value"};
+        String[] columns = new String[] {"file"};
+        System.out.println("collums created");
         DefaultTableModel defaultModel = new DefaultTableModel(columns, 0);
+        System.out.println("default table created");
 
         for (Map.Entry<String, FileProperties> entry : node.filenameMap.entrySet()) {
             System.out.println("table entries added");
-            defaultModel.addRow(new Object[] {entry.getKey(), entry.getValue()});
-
+            defaultModel.addRow(new Object[] {entry.getKey()});
         }
         //JList list1 = new JList((ListModel) node.filenameMap);
         //listFiles();
         //JList list1 = new JList((ListModel) node.filenameMap);
+        rootpanel.add(table1);
         setVisible(true);
 
 
