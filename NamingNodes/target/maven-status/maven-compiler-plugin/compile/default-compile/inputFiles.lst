@@ -1,7 +1,14 @@
-C:\Users\Ruben Joosen\Documents\AntwerpenU\Semester 5\Distributed Systems\ProjectY\DS\NamingNodes\src\main\java\FileUploadHandler.java
-C:\Users\Ruben Joosen\Documents\AntwerpenU\Semester 5\Distributed Systems\ProjectY\DS\NamingNodes\src\main\java\DirectoryWatcher.java
-C:\Users\Ruben Joosen\Documents\AntwerpenU\Semester 5\Distributed Systems\ProjectY\DS\NamingNodes\src\main\java\FileDownloadHandler.java
-C:\Users\Ruben Joosen\Documents\AntwerpenU\Semester 5\Distributed Systems\ProjectY\DS\NamingNodes\src\main\java\NamingInterface.java
-C:\Users\Ruben Joosen\Documents\AntwerpenU\Semester 5\Distributed Systems\ProjectY\DS\NamingNodes\src\main\java\Constants.java
-C:\Users\Ruben Joosen\Documents\AntwerpenU\Semester 5\Distributed Systems\ProjectY\DS\NamingNodes\src\main\java\NodeMain.java
-C:\Users\Ruben Joosen\Documents\AntwerpenU\Semester 5\Distributed Systems\ProjectY\DS\NamingNodes\src\main\java\NamingNode.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/DirectoryWatcher.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/NamingInterface.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/NodeMain.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/FileAgent.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/FileRemovalAgent.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/FailureAgent.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/AgentInterface.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/FilesGui.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/FileProperties.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/NamingNode.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/FileUploadHandler.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/FileDownloadHandler.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/NodeGui.java
+/Users/cedricplouvier/Documents/UA/5esemester/DistributedSystems/NamingNodes/src/main/java/Constants.java
