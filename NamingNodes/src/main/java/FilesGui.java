@@ -27,7 +27,7 @@ public class FilesGui extends JFrame {
             //defaultModel.addColumn(entry.getKey());
             defaultModel.addRow(new Object[] {entry.getKey()});
         }
-        rootpanel.add(new JScrollPane(table1));
+        add(new JScrollPane(table1));
         setVisible(true);
     }
 
