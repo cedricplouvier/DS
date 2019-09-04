@@ -14,23 +14,21 @@ public class FilesGui extends JFrame {
     public FilesGui(NamingNode nn){
         node=nn;
 
-        //setVisible(true);
+        setVisible(true);
         setSize(300, 200);
         add(rootpanel);
         System.out.println("rootpanel added");
-        DefaultTableModel defaultModel = new DefaultTableModel();
+        String[] columns = new String[] {"file"};
+        DefaultTableModel defaultModel = new DefaultTableModel(columns,0);
         System.out.println("default table created");
-
+        table1.setModel(defaultModel);
         for (Map.Entry<String, FileProperties> entry : node.filenameMap.entrySet()) {
             System.out.println("table entries added");
-            defaultModel.addColumn(entry.getKey());
+            //defaultModel.addColumn(entry.getKey());
+            defaultModel.addRow(new Object[] {entry.getKey()});
         }
-        table1.setModel(defaultModel);
-        rootpanel.setVisible(true);
-        table1.setVisible(true);
+        rootpanel.add(new JScrollPane(table1));
         setVisible(true);
-
-
     }
 
     public void listFiles(){
