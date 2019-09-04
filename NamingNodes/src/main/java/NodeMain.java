@@ -6,8 +6,8 @@ public class NodeMain
     {
         NamingNode nn = new NamingNode();
 
-        //NodeGui nodeGui = new NodeGui(nn);
-        //nodeGui.setVisible(true);
-        nn.start();
+        NodeGui nodeGui = new NodeGui(nn);
+        nodeGui.setVisible(true);
+        //nn.start();
     }
 }

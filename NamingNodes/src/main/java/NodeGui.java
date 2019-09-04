@@ -22,7 +22,7 @@ public class NodeGui extends JFrame {
         setSize(300, 200);
         setTitle("Node ");
 
-        add(rootPanel);
+        add(rootpanel);
 
 
         button1.addActionListener(new ActionListener() {
