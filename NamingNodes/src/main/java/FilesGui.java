@@ -16,14 +16,14 @@ public class FilesGui extends JFrame {
         setSize(300, 200);
         add(rootpanel);
 
-        JList list1 = new JList((ListModel) node.filenameMap);
-        listFiles(list1);
+        //JList list1 = new JList((ListModel) node.filenameMap);
+        listFiles();
         //JList list1 = new JList((ListModel) node.filenameMap);
 
 
     }
 
-    public void listFiles(JList list1){
+    public void listFiles(){
         NavigableMap nmap = node.filenameMap.descendingMap();
         System.out.println(nmap);
         node.filenameMap.descendingKeySet();
@@ -35,8 +35,10 @@ public class FilesGui extends JFrame {
         Iterator it = set.iterator();
 
         while(it.hasNext()){
+            System.out.println("iterating in list");
             Map.Entry me = (Map.Entry)it.next();
             String key = (String) me.getKey();
+            System.out.println("print key: ");
             System.out.println(key);
             this.list1.add((Component) node.filenameMap.descendingKeySet());
         }
