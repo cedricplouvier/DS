@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="3180dc30-cccc-45ed-8797-19c6dd40e40b" name="Default Changelist" comment="" />
+    <list default="true" id="3180dc30-cccc-45ed-8797-19c6dd40e40b" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/RepFilesGui.form" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/RepFilesGui.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/FilesGui.form" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/FilesGui.form" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/FilesGui.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/FilesGui.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/NodeGui.form" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/NodeGui.form" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/NodeGui.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/NodeGui.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/NodeGui$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/NodeGui$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/NodeGui$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/NodeGui$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/NodeGui.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/NodeGui.class" afterDir="false" />
+    </list>
     <ignored path="$PROJECT_DIR$/target/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -14,10 +25,18 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/NamingNode.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="312">
-              <caret line="175" column="9" lean-forward="true" selection-start-line="175" selection-start-column="9" selection-end-line="175" selection-end-column="9" />
+            <state relative-caret-position="-5489">
+              <caret line="236" column="13" lean-forward="true" selection-start-line="236" selection-start-column="13" selection-end-line="236" selection-end-column="13" />
               <folding>
                 <element signature="imports" expanded="true" />
+                <element signature="e#12869#13058#0" expanded="true" />
+                <element signature="e#13057#13058#0" expanded="true" />
+                <element signature="e#15516#15760#0" expanded="true" />
+                <element signature="e#15759#15760#0" expanded="true" />
+                <element signature="e#17894#18153#0" expanded="true" />
+                <element signature="e#18152#18153#0" expanded="true" />
+                <element signature="e#18244#18490#0" expanded="true" />
+                <element signature="e#18489#18490#0" expanded="true" />
                 <element signature="e#21835#22076#0" expanded="true" />
                 <element signature="e#22075#22076#0" expanded="true" />
                 <element signature="e#22248#22492#0" expanded="true" />
@@ -31,60 +50,61 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/FileRemovalAgent.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="30">
-              <caret line="3" column="13" selection-start-line="3" selection-start-column="13" selection-end-line="3" selection-end-column="13" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/Constants.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="45">
-              <caret line="3" column="19" selection-start-line="3" selection-start-column="19" selection-end-line="3" selection-end-column="19" />
-              <folding>
-                <element signature="imports" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/NodeMain.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="150">
-              <caret line="10" column="10" selection-start-line="10" selection-start-column="10" selection-end-line="10" selection-end-column="10" />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/FilesGui.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="228">
-              <caret line="19" column="23" lean-forward="true" selection-start-line="19" selection-start-column="23" selection-end-line="19" selection-end-column="23" />
+            <state relative-caret-position="392">
+              <caret line="28" column="5" selection-start-line="28" selection-start-column="5" selection-end-line="28" selection-end-column="5" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
             </state>
           </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/RepFilesGui.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="421">
+              <caret line="30" column="9" lean-forward="true" selection-start-line="30" selection-start-column="9" selection-end-line="30" selection-end-column="9" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/RepFilesGui.form">
+          <provider selected="true" editor-type-id="ui-designer" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/NodeGui.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="315">
-              <caret line="21" column="16" selection-start-line="21" selection-start-column="16" selection-end-line="21" selection-end-column="16" />
+            <state relative-caret-position="547">
+              <caret line="60" column="11" lean-forward="true" selection-start-line="60" selection-start-column="11" selection-end-line="60" selection-end-column="11" />
               <folding>
                 <element signature="imports" expanded="true" />
-                <element signature="e#824#1203#0" expanded="true" />
-                <element signature="e#1202#1203#0" expanded="true" />
+                <element signature="e#823#1268#0" expanded="true" />
+                <element signature="e#1267#1268#0" expanded="true" />
               </folding>
             </state>
           </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_201.jdk/Contents/Home/src.zip!/java/awt/event/ActionListener.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="435">
+              <caret line="52" lean-forward="true" selection-start-line="52" selection-end-line="52" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/NodeGui.form">
+          <provider selected="true" editor-type-id="ui-designer" />
         </entry>
       </file>
     </leaf>
@@ -113,10 +133,12 @@
         <option value="$PROJECT_DIR$/src/main/java/GuiNode.java" />
         <option value="$PROJECT_DIR$/src/main/java/FilesGUI.java" />
         <option value="$PROJECT_DIR$/src/main/java/NodeMain.java" />
+        <option value="$PROJECT_DIR$/src/main/java/NamingNode.java" />
         <option value="$PROJECT_DIR$/src/main/java/NodeGui.form" />
         <option value="$PROJECT_DIR$/src/main/java/NodeGui.java" />
-        <option value="$PROJECT_DIR$/src/main/java/NamingNode.java" />
+        <option value="$PROJECT_DIR$/src/main/java/RepFilesGui.form" />
         <option value="$PROJECT_DIR$/src/main/java/FilesGui.form" />
+        <option value="$PROJECT_DIR$/src/main/java/RepFilesGui.java" />
         <option value="$PROJECT_DIR$/src/main/java/FilesGui.java" />
       </list>
     </option>
@@ -191,6 +213,22 @@
               <item name="java" type="462c0819:PsiDirectoryNode" />
               <item name="FilesGui" type="e9f4de52:FormNode" />
             </path>
+            <path>
+              <item name="DS" type="b2602c69:ProjectViewProjectNode" />
+              <item name="NamingNodes" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+              <item name="java" type="462c0819:PsiDirectoryNode" />
+              <item name="NodeGui" type="e9f4de52:FormNode" />
+            </path>
+            <path>
+              <item name="DS" type="b2602c69:ProjectViewProjectNode" />
+              <item name="NamingNodes" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+              <item name="java" type="462c0819:PsiDirectoryNode" />
+              <item name="RepFilesGui" type="e9f4de52:FormNode" />
+            </path>
           </expand>
           <select />
         </subPane>
@@ -198,8 +236,8 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="UI_DESIGNER_EDITOR_MODE.UIDesignerToolWindowManager.WIDTH" value="197" />
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1567624415391" />
+    <property name="UI_DESIGNER_EDITOR_MODE.UIDesignerToolWindowManager.WIDTH" value="375" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1567627656170" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="project.structure.last.edited" value="Project" />
     <property name="project.structure.proportion" value="0.0" />
@@ -234,7 +272,7 @@
     <frame x="98" y="61" width="1470" height="919" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.21288516" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.21288516" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
@@ -243,7 +281,7 @@
       <window_info id="Favorites" order="6" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.24546553" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.24546553" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -251,8 +289,8 @@
       <window_info anchor="bottom" id="Terminal" order="7" />
       <window_info anchor="bottom" id="Event Log" order="8" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="9" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Messages" order="10" weight="0.3241491" />
-      <window_info active="true" anchor="right" id="Maven" visible="true" weight="0.15896359" />
+      <window_info anchor="bottom" id="Messages" order="10" visible="true" weight="0.32406288" />
+      <window_info anchor="right" id="Maven" weight="0.15896359" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="1" weight="0.25" />
       <window_info anchor="right" id="Palette" order="2" />
@@ -301,9 +339,6 @@
     <entry file="file://$PROJECT_DIR$/.idea/compiler.xml">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/NodeGui.form">
-      <provider selected="true" editor-type-id="ui-designer" />
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/FileAgent.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="345">
@@ -332,15 +367,36 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/NodeGui.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/NamingNode.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="315">
-          <caret line="21" column="16" selection-start-line="21" selection-start-column="16" selection-end-line="21" selection-end-column="16" />
+        <state relative-caret-position="-5489">
+          <caret line="236" column="13" lean-forward="true" selection-start-line="236" selection-start-column="13" selection-end-line="236" selection-end-column="13" />
           <folding>
             <element signature="imports" expanded="true" />
-            <element signature="e#824#1203#0" expanded="true" />
-            <element signature="e#1202#1203#0" expanded="true" />
+            <element signature="e#12869#13058#0" expanded="true" />
+            <element signature="e#13057#13058#0" expanded="true" />
+            <element signature="e#15516#15760#0" expanded="true" />
+            <element signature="e#15759#15760#0" expanded="true" />
+            <element signature="e#17894#18153#0" expanded="true" />
+            <element signature="e#18152#18153#0" expanded="true" />
+            <element signature="e#18244#18490#0" expanded="true" />
+            <element signature="e#18489#18490#0" expanded="true" />
+            <element signature="e#21835#22076#0" expanded="true" />
+            <element signature="e#22075#22076#0" expanded="true" />
+            <element signature="e#22248#22492#0" expanded="true" />
+            <element signature="e#22491#22492#0" expanded="true" />
+            <element signature="e#31428#31596#0" expanded="true" />
+            <element signature="e#31595#31596#0" expanded="true" />
+            <element signature="e#31678#31853#0" expanded="true" />
+            <element signature="e#31852#31853#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/NodeMain.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="10" column="10" selection-start-line="10" selection-start-column="10" selection-end-line="10" selection-end-column="10" />
         </state>
       </provider>
     </entry>
@@ -354,38 +410,48 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/NodeMain.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/NodeGui.form">
+      <provider selected="true" editor-type-id="ui-designer" />
+    </entry>
+    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_201.jdk/Contents/Home/src.zip!/java/awt/event/ActionListener.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="10" column="10" selection-start-line="10" selection-start-column="10" selection-end-line="10" selection-end-column="10" />
+        <state relative-caret-position="435">
+          <caret line="52" lean-forward="true" selection-start-line="52" selection-end-line="52" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/NodeGui.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="547">
+          <caret line="60" column="11" lean-forward="true" selection-start-line="60" selection-start-column="11" selection-end-line="60" selection-end-column="11" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="e#823#1268#0" expanded="true" />
+            <element signature="e#1267#1268#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/FilesGui.form">
       <provider selected="true" editor-type-id="ui-designer" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/NamingNode.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/RepFilesGui.form">
+      <provider selected="true" editor-type-id="ui-designer" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/RepFilesGui.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="312">
-          <caret line="175" column="9" lean-forward="true" selection-start-line="175" selection-start-column="9" selection-end-line="175" selection-end-column="9" />
+        <state relative-caret-position="421">
+          <caret line="30" column="9" lean-forward="true" selection-start-line="30" selection-start-column="9" selection-end-line="30" selection-end-column="9" />
           <folding>
             <element signature="imports" expanded="true" />
-            <element signature="e#21835#22076#0" expanded="true" />
-            <element signature="e#22075#22076#0" expanded="true" />
-            <element signature="e#22248#22492#0" expanded="true" />
-            <element signature="e#22491#22492#0" expanded="true" />
-            <element signature="e#31428#31596#0" expanded="true" />
-            <element signature="e#31595#31596#0" expanded="true" />
-            <element signature="e#31678#31853#0" expanded="true" />
-            <element signature="e#31852#31853#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/FilesGui.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="228">
-          <caret line="19" column="23" lean-forward="true" selection-start-line="19" selection-start-column="23" selection-end-line="19" selection-end-column="23" />
+        <state relative-caret-position="392">
+          <caret line="28" column="5" selection-start-line="28" selection-start-column="5" selection-end-line="28" selection-end-column="5" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>

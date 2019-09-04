@@ -47,11 +47,16 @@ public class NodeGui extends JFrame {
 
         });
 
-
         button2.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                FilesGui filesGui = new FilesGui(node);
+                FilesGui filesGUI = new FilesGui(node);
+            }
+        });
+        button4.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                RepFilesGui repfilesGUI = new RepFilesGui(node);
             }
         });
     }
