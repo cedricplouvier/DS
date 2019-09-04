@@ -21,7 +21,7 @@
           <component id="1cedf" class="javax.swing.JLabel">
             <constraints>
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="0" indent="0" use-parent-layout="false">
-                <preferred-size width="167" height="135"/>
+                <preferred-size width="167" height="201"/>
               </grid>
             </constraints>
             <properties>
@@ -31,7 +31,7 @@
           <vspacer id="fc79b">
             <constraints>
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false">
-                <preferred-size width="11" height="135"/>
+                <preferred-size width="11" height="201"/>
               </grid>
             </constraints>
           </vspacer>
