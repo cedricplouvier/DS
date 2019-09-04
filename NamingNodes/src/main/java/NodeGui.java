@@ -1,7 +1,9 @@
 import javax.swing.*;
+import javax.xml.stream.XMLStreamException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 public class NodeGui extends JFrame {
     private JButton button1;
@@ -29,6 +31,18 @@ public class NodeGui extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 node.start();
+            }
+        });
+        button3.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    node.shutdown();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                } catch (XMLStreamException e1) {
+                    e1.printStackTrace();
+                }
             }
         });
 
