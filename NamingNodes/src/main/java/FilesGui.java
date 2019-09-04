@@ -25,10 +25,9 @@ public class FilesGui extends JFrame {
             System.out.println("table entries added");
             defaultModel.addColumn(entry.getKey());
         }
+        rootpanel.add(new JScrollPane(table1));
         table1.setModel(defaultModel);
-        //JList list1 = new JList((ListModel) node.filenameMap);
-        //listFiles();
-        //JList list1 = new JList((ListModel) node.filenameMap);
+        rootpanel.setVisible(true);
         setVisible(true);
 
 
