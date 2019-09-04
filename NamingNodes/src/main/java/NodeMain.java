@@ -5,6 +5,9 @@ public class NodeMain
     public static void main(String[] args) throws IOException
     {
         NamingNode nn = new NamingNode();
-        nn.start();
+
+        NodeGui nodeGui = new NodeGui(nn);
+        nodeGui.setVisible(true);
+        //nn.start();
     }
 }
