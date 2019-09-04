@@ -181,10 +181,7 @@ public class NamingNode implements AgentInterface
                     //nothing
                     System.out.println("UDPsent");
                 }while(!uploadDone);
-                String filen = listOfFiles[i].getName();
-                System.out.println(filen);
-                File file = new File(filen);
-                if(file.delete()) System.out.println(filen + " deleted"); //if upload done, delete
+                listOfFiles[i].delete(); //if upload done, delete
             }
         }
         //
