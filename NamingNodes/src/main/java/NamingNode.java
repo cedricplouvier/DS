@@ -196,7 +196,9 @@ public class NamingNode implements AgentInterface
             UDPSend(filenameSocket, "f " + filename,ownerNode, Constants.UDPFileName_PORT);
             do{
                 //nothing
+                System.out.println("UDPsent 2");
             }while(!uploadDone);
+            System.out.println("uploadDone");
         }
         reader.close();
         System.out.println("reader closed");

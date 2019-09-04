@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.NavigableMap;
 import java.util.*;
@@ -6,24 +7,36 @@ import java.util.*;
 public class FilesGui extends JFrame {
 
     public NamingNode node;
-    private JPanel rootpanel;
+    public JPanel rootpanel;
+    public JTable table1;
     private JList list1;
 
     public FilesGui(NamingNode nn){
         node=nn;
 
-        setVisible(true);
+        //setVisible(true);
         setSize(300, 200);
         add(rootpanel);
 
+        String[] columns = new String[] {"file", "value"};
+        DefaultTableModel defaultModel = new DefaultTableModel(columns, 0);
+        JTable table1 = new JTable(defaultModel);
+
+        for (Map.Entry<String, FileProperties> entry : node.filenameMap.entrySet()) {
+            defaultModel.addRow(new Object[] {entry.getKey(), entry.getValue()});
+        }
+
+        rootpanel.add(new JScrollPane(table1));
         //JList list1 = new JList((ListModel) node.filenameMap);
-        listFiles();
+        //listFiles();
         //JList list1 = new JList((ListModel) node.filenameMap);
+        setVisible(true);
 
 
     }
 
     public void listFiles(){
+        System.out.println("listfiles called");
         NavigableMap nmap = node.filenameMap.descendingMap();
         System.out.println(nmap);
         node.filenameMap.descendingKeySet();
