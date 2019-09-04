@@ -38,12 +38,14 @@ public class NodeGui extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 try {
                     node.shutdown();
+                    System.out.println("after shutdown in GUI");
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 } catch (XMLStreamException e1) {
                     e1.printStackTrace();
                 }
             }
+
         });
 
 

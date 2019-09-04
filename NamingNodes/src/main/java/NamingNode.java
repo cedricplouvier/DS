@@ -208,6 +208,7 @@ public class NamingNode implements AgentInterface
         fileListenerRunning = false;
         fileAgentHandlerRunning = false; //turn off remaining threads
         namingServer.removeNode(thisNodeID); //remove node from IPMap on the server
+        System.out.println("shutdown complete");
     }
 
     public void shutdownCheck()
