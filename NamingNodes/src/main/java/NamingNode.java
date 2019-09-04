@@ -157,6 +157,7 @@ public class NamingNode implements AgentInterface
     //-------------------------------------------------------------------------//
     public void shutdown() throws IOException, XMLStreamException
     {
+        System.out.println("Start shutdown");
         BufferedReader reader;
         DatagramSocket sendingSocket = new DatagramSocket();
         String nextIP = namingServer.getIP(nextNodeID);
@@ -178,6 +179,7 @@ public class NamingNode implements AgentInterface
                 UDPSend(filenameSocket, "f " + listOfFiles[i].getName(),namingServer.getIP(previousNodeID), Constants.UDPFileName_PORT); //upload will now be handles in filelistener() thread
                 do{
                     //nothing
+                    System.out.println("UDPsent");
                 }while(!uploadDone);
                 listOfFiles[i].delete(); //if upload done, delete
             }
@@ -194,9 +196,12 @@ public class NamingNode implements AgentInterface
             UDPSend(filenameSocket, "f " + filename,ownerNode, Constants.UDPFileName_PORT);
             do{
                 //nothing
+                System.out.println("UDPsent 2");
             }while(!uploadDone);
+            System.out.println("uploadDone");
         }
         reader.close();
+        System.out.println("reader closed");
 
         //clear out the filelog before shutting down
         PrintWriter writer = new PrintWriter("/home/pi/Documents/filelog.txt");
@@ -208,6 +213,7 @@ public class NamingNode implements AgentInterface
         fileListenerRunning = false;
         fileAgentHandlerRunning = false; //turn off remaining threads
         namingServer.removeNode(thisNodeID); //remove node from IPMap on the server
+        System.out.println("shutdown complete");
     }
 
     public void shutdownCheck()
