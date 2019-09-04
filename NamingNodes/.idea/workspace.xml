@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="3180dc30-cccc-45ed-8797-19c6dd40e40b" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/src/main/java/FilesGui.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/FilesGui.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/NamingNode.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/NamingNode.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/NodeGui.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/NodeGui.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/target/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -18,10 +17,24 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/NamingNode.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="349">
-              <caret line="192" column="9" lean-forward="true" selection-start-line="192" selection-start-column="9" selection-end-line="192" selection-end-column="9" />
+            <state relative-caret-position="420">
+              <caret line="198" column="31" selection-start-line="198" selection-start-column="31" selection-end-line="198" selection-end-column="31" />
               <folding>
                 <element signature="imports" expanded="true" />
+                <element signature="e#12869#13058#0" expanded="true" />
+                <element signature="e#13057#13058#0" expanded="true" />
+                <element signature="e#17894#18153#0" expanded="true" />
+                <element signature="e#18152#18153#0" expanded="true" />
+                <element signature="e#18244#18490#0" expanded="true" />
+                <element signature="e#18489#18490#0" expanded="true" />
+                <element signature="e#21835#22076#0" expanded="true" />
+                <element signature="e#22075#22076#0" expanded="true" />
+                <element signature="e#22248#22492#0" expanded="true" />
+                <element signature="e#22491#22492#0" expanded="true" />
+                <element signature="e#31428#31596#0" expanded="true" />
+                <element signature="e#31595#31596#0" expanded="true" />
+                <element signature="e#31678#31853#0" expanded="true" />
+                <element signature="e#31852#31853#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -186,7 +199,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="UI_DESIGNER_EDITOR_MODE.UIDesignerToolWindowManager.WIDTH" value="197" />
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1567622170353" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1567622654230" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="project.structure.last.edited" value="Project" />
     <property name="project.structure.proportion" value="0.0" />
@@ -230,7 +243,7 @@
       <window_info id="Favorites" order="6" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.24546553" />
+      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.24546553" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -239,7 +252,7 @@
       <window_info anchor="bottom" id="Event Log" order="8" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="9" show_stripe_button="false" />
       <window_info anchor="bottom" id="Messages" order="10" weight="0.3241491" />
-      <window_info anchor="right" id="Maven" weight="0.15896359" />
+      <window_info active="true" anchor="right" id="Maven" visible="true" weight="0.15896359" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="1" weight="0.25" />
       <window_info anchor="right" id="Palette" order="2" />
@@ -363,10 +376,24 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/NamingNode.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="349">
-          <caret line="192" column="9" lean-forward="true" selection-start-line="192" selection-start-column="9" selection-end-line="192" selection-end-column="9" />
+        <state relative-caret-position="420">
+          <caret line="198" column="31" selection-start-line="198" selection-start-column="31" selection-end-line="198" selection-end-column="31" />
           <folding>
             <element signature="imports" expanded="true" />
+            <element signature="e#12869#13058#0" expanded="true" />
+            <element signature="e#13057#13058#0" expanded="true" />
+            <element signature="e#17894#18153#0" expanded="true" />
+            <element signature="e#18152#18153#0" expanded="true" />
+            <element signature="e#18244#18490#0" expanded="true" />
+            <element signature="e#18489#18490#0" expanded="true" />
+            <element signature="e#21835#22076#0" expanded="true" />
+            <element signature="e#22075#22076#0" expanded="true" />
+            <element signature="e#22248#22492#0" expanded="true" />
+            <element signature="e#22491#22492#0" expanded="true" />
+            <element signature="e#31428#31596#0" expanded="true" />
+            <element signature="e#31595#31596#0" expanded="true" />
+            <element signature="e#31678#31853#0" expanded="true" />
+            <element signature="e#31852#31853#0" expanded="true" />
           </folding>
         </state>
       </provider>

@@ -185,11 +185,10 @@ public class NamingNode implements AgentInterface
             }
         }
         //
-        reader = new BufferedReader(new FileReader("/home/pi/Documents/filelog.txt"));
+        /*reader = new BufferedReader(new FileReader("/home/pi/Documents/filelog.txt"));
         String[] lineSplit;
         String line = reader.readLine();
-        //while(line != null)
-        while(line.length()!=0)
+        while(line != null)
         {
             lineSplit = line.split("\\s+");
             String filename = lineSplit[0];
@@ -202,7 +201,7 @@ public class NamingNode implements AgentInterface
             System.out.println("uploadDone");
         }
         reader.close();
-        System.out.println("reader closed");
+        System.out.println("reader closed");*/
 
         //clear out the filelog before shutting down
         PrintWriter writer = new PrintWriter("/home/pi/Documents/filelog.txt");
