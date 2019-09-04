@@ -181,7 +181,10 @@ public class NamingNode implements AgentInterface
                     //nothing
                     System.out.println("UDPsent");
                 }while(!uploadDone);
-                listOfFiles[i].delete(); //if upload done, delete
+                String filen = listOfFiles[i].getName();
+                System.out.println(filen);
+                File file = new File(filen);
+                if(file.delete()) System.out.println(filen + " deleted"); //if upload done, delete
             }
         }
         //
@@ -449,6 +452,8 @@ public class NamingNode implements AgentInterface
         PrintWriter writer = new PrintWriter("/home/pi/Documents/filelog.txt", "UTF-8");
 
         DatagramPacket receivingPack = new DatagramPacket(buf, buf.length);
+        FileDownloadHandler FDH;
+        File[] listOfFiles;
 
         while(fileListenerRunning)
         {
@@ -464,13 +469,13 @@ public class NamingNode implements AgentInterface
 
                     writer.println(receivedAr[1] + " " + thisNodeID);
                     sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
-                    FileDownloadHandler FDH = new FileDownloadHandler(receivedAr[1], calculatePort(sendingNode),this, sendingNode); //start TCP socket thread
+                    FDH = new FileDownloadHandler(receivedAr[1], calculatePort(sendingNode),this, sendingNode); //start TCP socket thread
                     FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
                     FileDwnThr.start();
                     UDPSend(filenameSocket,"ack "+receivedAr[1],receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
                     FileDwnThr.join();
                     UDPSend(filenameSocket,"rec",receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT);
-                    File[] listOfFiles = Constants.localFileDirectory.listFiles();
+                    listOfFiles = Constants.localFileDirectory.listFiles();
                     for (int i = 0; i < listOfFiles.length; i++) {
                         if (listOfFiles[i].isFile() && receivedAr[1].equals(listOfFiles[i]))
                         {
@@ -480,6 +485,28 @@ public class NamingNode implements AgentInterface
                         }
                     }
                     break;
+
+               /* case "fd":
+
+                    writer.println(receivedAr[1] + " " + thisNodeID);
+                    sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
+                    FDH = new FileDownloadHandler(receivedAr[1], calculatePort(sendingNode),this, sendingNode); //start TCP socket thread
+                    FileDwnThr = new Thread(FDH); //will be listening for incoming TCP downloads
+                    FileDwnThr.start();
+                    UDPSend(filenameSocket,"ack "+receivedAr[1],receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT); //send ack to let uploader know you are ready
+                    FileDwnThr.join();
+                    UDPSend(filenameSocket,"rec",receivingPack.getAddress().toString().replace("/",""),Constants.UDPFileName_PORT);
+                    listOfFiles = Constants.localFileDirectory.listFiles();
+                    for (int i = 0; i < listOfFiles.length; i++) {
+                        if (listOfFiles[i].isFile() && receivedAr[1].equals(listOfFiles[i]))
+                        {
+                            System.out.println("file is local!");
+                            //if file is local on server, send it to your previous node
+                            UDPSend(filenameSocket, "f " + receivedAr[1], namingServer.getIP(previousNodeID), Constants.UDPFileName_PORT);
+                        }
+                    }
+
+                    break;   */
 
                 case "ack":
                     sendingNode = namingServer.getNodeID(receivingPack.getAddress().toString().replace("/",""));
