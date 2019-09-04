@@ -17,16 +17,15 @@ public class FilesGui extends JFrame {
         //setVisible(true);
         setSize(300, 200);
         add(rootpanel);
-
+        System.out.println("rootpanel added");
         String[] columns = new String[] {"file", "value"};
         DefaultTableModel defaultModel = new DefaultTableModel(columns, 0);
-        JTable table1 = new JTable(defaultModel);
 
         for (Map.Entry<String, FileProperties> entry : node.filenameMap.entrySet()) {
+            System.out.println("table entries added");
             defaultModel.addRow(new Object[] {entry.getKey(), entry.getValue()});
-        }
 
-        rootpanel.add(new JScrollPane(table1));
+        }
         //JList list1 = new JList((ListModel) node.filenameMap);
         //listFiles();
         //JList list1 = new JList((ListModel) node.filenameMap);
