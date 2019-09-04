@@ -20,7 +20,6 @@ public class NodeGui extends JFrame {
     public NodeGui(NamingNode nn){
 
         node=nn;
-
         setSize(300, 200);
         setTitle("Node ");
 

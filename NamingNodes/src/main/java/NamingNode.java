@@ -188,7 +188,8 @@ public class NamingNode implements AgentInterface
         reader = new BufferedReader(new FileReader("/home/pi/Documents/filelog.txt"));
         String[] lineSplit;
         String line = reader.readLine();
-        while(line != null)
+        //while(line != null)
+        while(line.length()!=0)
         {
             lineSplit = line.split("\\s+");
             String filename = lineSplit[0];
