@@ -8,8 +8,8 @@ import java.util.*;
 public class FilesGui extends JFrame {
 
     public NamingNode node;
-    public JPanel rootpanel;
-    public JTable table1;
+    private JPanel rootpanel;
+    private JTable table1;
     private JList list1;
 
     public FilesGui(NamingNode nn){

@@ -8,8 +8,8 @@ import java.util.*;
 public class RepFilesGui extends JFrame {
 
     public NamingNode node;
-    public JPanel rootpanel;
-    public JTable table1;
+    private JPanel rootpanel;
+    private JTable table1;
 
 
     public RepFilesGui(NamingNode nn){
